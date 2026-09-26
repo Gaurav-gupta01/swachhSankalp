@@ -40,9 +40,10 @@ public class ViewAdvice {
 
     @ExceptionHandler(Exception.class)
     public Object generic(Exception ex, HttpServletRequest request) {
-        if (ex instanceof ResponseStatusException rse) {
-            HttpStatus status = HttpStatus.valueOf(rse.getStatusCode().value());
-            String message = rse.getReason() == null ? status.getReasonPhrase() : rse.getReason();
+        if (ex instanceof org.springframework.web.ErrorResponse errorResponse) {
+            HttpStatus status = HttpStatus.valueOf(errorResponse.getStatusCode().value());
+            String reason = (ex instanceof ResponseStatusException rse) ? rse.getReason() : null;
+            String message = reason == null ? status.getReasonPhrase() : reason;
             if (isApi(request)) {
                 return json(status, message);
             }

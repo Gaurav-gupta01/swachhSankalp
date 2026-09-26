@@ -44,6 +44,12 @@ public class DataSeeder implements ApplicationRunner {
     private static final double BASE_LAT = 15.2750;
     private static final double BASE_LNG = 73.9570;
 
+    static final String SUPER_ADMIN_EMAIL = "super@cleanvision.gov.in";
+    static final String SUPER_ADMIN_PASSWORD = "super123";
+
+    static final String LEADER_EMAIL = "leader@cleanvision.gov.in";
+    static final String LEADER_PASSWORD = "leader123";
+
     private final UserRepository users;
     private final TeamRepository teams;
     private final ReportRepository reports;
@@ -54,7 +60,10 @@ public class DataSeeder implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        if (users.count() > 0) {
+        boolean fresh = users.count() == 0;
+        ensureSuperAdmin();
+        if (!fresh) {
+            ensureTeamLeader();
             return;
         }
 
@@ -158,6 +167,30 @@ public class DataSeeder implements ApplicationRunner {
 
         log.info("Seeded demo data - officer {} / citizen {} and {} sample reports",
                 admin.getEmail(), citizen.getEmail(), reports.count());
+
+        ensureTeamLeader();
+    }
+
+    private void ensureSuperAdmin() {
+        if (users.findByEmailIgnoreCase(SUPER_ADMIN_EMAIL).isPresent()) {
+            return;
+        }
+        User superAdmin = user("Super Admin", SUPER_ADMIN_EMAIL, SUPER_ADMIN_PASSWORD, Role.SUPER_ADMIN);
+        log.info("Created super admin account {}", superAdmin.getEmail());
+    }
+
+    private void ensureTeamLeader() {
+        if (users.countByRole(Role.TEAM_LEADER) > 0) {
+            return;
+        }
+        Team team = teams.findByActiveTrueOrderByTeamNameAsc().stream().findFirst().orElse(null);
+        if (team == null) {
+            return;
+        }
+        User leader = user("Team Leader", LEADER_EMAIL, LEADER_PASSWORD, Role.TEAM_LEADER);
+        leader.setTeam(team);
+        users.save(leader);
+        log.info("Created team leader account {} for {}", leader.getEmail(), team.getTeamName());
     }
 
     private User user(String name, String email, String password, Role role) {

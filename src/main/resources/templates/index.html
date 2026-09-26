@@ -15,12 +15,17 @@
                     Take one photograph. CleanVision AI identifies the waste, estimates severity and
                     location, and converts it into an actionable municipal complaint.
                 </p>
-                <a th:href="@{/report/new}" class="btn btn-accent btn-lg me-2">
+                <a th:href="@{/report/new}" class="btn btn-accent btn-lg me-2"
+                   th:if="${currentUser == null or currentUser.role.canReport()}">
                     <i class="bi bi-camera-fill me-2"></i>Report Waste
                 </a>
-                <a th:href="@{/my-reports}" class="btn btn-outline-light btn-lg"
-                   th:if="${currentUser != null}">
+                <a th:href="@{/my-reports}" class="btn btn-outline-light btn-lg me-2"
+                   th:if="${currentUser != null and currentUser.role.canReport()}">
                     <i class="bi bi-journal-check me-2"></i>Track My Reports
+                </a>
+                <a th:href="@{/admin}" class="btn btn-outline-light btn-lg"
+                   th:if="${currentUser != null and currentUser.role.isOfficer()}">
+                    <i class="bi bi-speedometer2 me-2"></i>Open Municipal Dashboard
                 </a>
             </div>
             <div class="col-lg-5">
@@ -28,13 +33,13 @@
                     <div class="col-6">
                         <div class="stat-card p-3 h-100">
                             <div class="value" th:text="${stats.totalReports}">0</div>
-                            <div class="label">Total Reports</div>
+                            <div class="label" th:text="${scopeMine ? 'My Reports' : 'Total Reports'}">Total Reports</div>
                         </div>
                     </div>
                     <div class="col-6">
                         <div class="stat-card p-3 h-100">
                             <div class="value" th:text="${stats.pending}">0</div>
-                            <div class="label">Pending</div>
+                            <div class="label" th:text="${scopeMine ? 'Awaiting Action' : 'Pending'}">Pending</div>
                         </div>
                     </div>
                     <div class="col-6">
@@ -89,12 +94,16 @@
         <div class="col-lg-7">
             <div class="card-soft p-4 h-100">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2 class="h5 section-title mb-0">Latest citizen reports</h2>
+                    <h2 class="h5 section-title mb-0"
+                        th:text="${scopeMine ? 'My recent reports' : 'Latest citizen reports'}">Latest citizen reports</h2>
                     <a th:href="@{/admin/reports}" class="small"
-                       th:if="${currentUser != null and currentUser.role.name() == 'ADMIN'}">View all</a>
+                       th:if="${currentUser != null and currentUser.role.isOfficer()}">View all</a>
                 </div>
 
-                <div class="empty-state" th:if="${#lists.isEmpty(stats.recentReports)}">
+                <div class="empty-state" th:if="${#lists.isEmpty(stats.recentReports)}"
+                     th:text="${scopeMine
+                         ? 'You have not reported anything yet. Take a photo and CleanVision AI will do the rest.'
+                         : 'No reports yet. Be the first to photograph waste in your area.'}">
                     No reports yet. Be the first to photograph waste in your area.
                 </div>
 
@@ -113,7 +122,7 @@
                         </div>
                         <div class="text-end">
                             <span class="badge-status badge st-submitted"
-                                  th:classappend="'st-' + ${#strings.replace(r.status,' ','_')}"
+                                  th:classappend="'st-' + ${#strings.toLowerCase(r.statusCode)}"
                                   th:text="${r.status}">Pending</span>
                             <div class="small text-muted mt-1" th:text="${r.severity}">High</div>
                         </div>
@@ -124,8 +133,10 @@
 
         <div class="col-lg-5">
             <div class="card-soft p-4 h-100">
-                <h2 class="h5 section-title mb-3">Waste by category</h2>
-                <div class="empty-state py-4" th:if="${#map.isEmpty(stats.byCategory)}">No data yet.</div>
+                <h2 class="h5 section-title mb-3"
+                    th:text="${scopeMine ? 'My waste by category' : 'Waste by category'}">Waste by category</h2>
+                <div class="empty-state py-4" th:if="${stats.byCategory.isEmpty()}"
+                     th:text="${scopeMine ? 'Nothing reported yet.' : 'No data yet.'}">No data yet.</div>
                 <div th:each="entry : ${stats.byCategory}">
                     <div class="bar-row">
                         <span class="bar-label" th:text="${entry.key}">Plastic</span>
@@ -145,7 +156,7 @@
                     </div>
                 </div>
 
-                <div class="mt-3" th:if="${currentUser != null and currentUser.role.name() == 'ADMIN'}">
+                <div class="mt-3" th:if="${currentUser != null and currentUser.role.isOfficer()}">
                     <a th:href="@{/admin/analytics}" class="btn btn-sm btn-outline-primary">Open full analytics</a>
                 </div>
             </div>

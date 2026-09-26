@@ -63,7 +63,7 @@
         <div class="col-lg-4">
             <div class="card-soft p-4 h-100">
                 <h2 class="h6 section-title mb-3">Waste by category</h2>
-                <div class="empty-state py-4" th:if="${#map.isEmpty(stats.byCategory)}">No reports yet.</div>
+                <div class="empty-state py-4" th:if="${stats.byCategory.isEmpty()}">No reports yet.</div>
                 <div th:each="entry : ${stats.byCategory}">
                     <div class="bar-row">
                         <span class="bar-label" th:text="${entry.key}">Plastic</span>
@@ -78,7 +78,7 @@
 
                 <hr>
                 <h2 class="h6 section-title mb-3">Waste by ward</h2>
-                <div class="empty-state py-3" th:if="${#map.isEmpty(stats.byWard)}">No ward data yet.</div>
+                <div class="empty-state py-3" th:if="${stats.byWard.isEmpty()}">No ward data yet.</div>
                 <div th:each="entry : ${stats.byWard}">
                     <div class="bar-row">
                         <span class="bar-label" th:text="${entry.key}">Ward 1</span>
@@ -117,11 +117,11 @@
                     <td class="fw-semibold" th:text="${r.publicId}">CV10001</td>
                     <td><span th:text="${r.icon}"></span> <span th:text="${r.wasteType}">Plastic</span></td>
                     <td><span class="badge-severity badge"
-                              th:classappend="'sev-' + ${#strings.toUpperCase(r.severity)}"
+                              th:classappend="'sev-' + ${r.severityCode}"
                               th:text="${r.severity}">High</span></td>
                     <td th:text="${r.ward}">Ward 5</td>
                     <td><span class="badge-status badge st-submitted"
-                              th:classappend="'st-' + ${#strings.replace(r.status,' ','_')}"
+                              th:classappend="'st-' + ${#strings.toLowerCase(r.statusCode)}"
                               th:text="${r.status}">Pending</span></td>
                     <td class="small text-muted" th:text="${#temporals.format(r.createdAt, 'dd MMM, HH:mm')}">time</td>
                     <td class="text-end">
@@ -143,6 +143,7 @@
 <script th:inline="javascript">
     var geoPoints = /*[[${geoPoints}]]*/ [];
 </script>
+<script th:src="@{/vendor/leaflet/leaflet.js}"></script>
 <script th:src="@{/js/map.js}"></script>
 </body>
 </html>

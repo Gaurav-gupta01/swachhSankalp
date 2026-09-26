@@ -13,7 +13,11 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
 
     List<Assignment> findByActiveTrue();
 
+    List<Assignment> findByTeamIdAndActiveTrue(Long teamId);
+
     long countByTeamIdAndActiveTrue(Long teamId);
+
+    long countByTeamId(Long teamId);
 
     void deleteByReportId(Long reportId);
 }

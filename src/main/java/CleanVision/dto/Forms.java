@@ -72,6 +72,49 @@ public final class Forms {
         private String description;
     }
 
+    @Data
+    public static class TeamForm {
+
+        @NotBlank(message = "Team name is required")
+        @Size(max = 80)
+        private String teamName;
+
+        @Size(max = 60)
+        private String ward;
+
+        @Size(max = 80)
+        private String leader;
+
+        @Size(max = 30)
+        private String contact;
+
+        private boolean active = true;
+    }
+
+    @Data
+    public static class CreateUserForm {
+
+        @NotBlank(message = "Name is required")
+        @Size(max = 120)
+        private String name;
+
+        @NotBlank(message = "Email is required")
+        @Email(message = "Enter a valid email")
+        private String email;
+
+        @Size(max = 20)
+        private String phone;
+
+        @NotBlank(message = "Password is required")
+        @Size(min = 6, max = 60, message = "Password must be at least 6 characters")
+        private String password;
+
+        @NotBlank(message = "Role is required")
+        private String role;
+
+        private Long teamId;
+    }
+
     public record AiClassifyResponse(
             String imageFile,
             String category,

@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,6 +36,8 @@ public class AdminController {
     private final StatsService statsService;
     private final ReportService reportService;
     private final TeamRepository teams;
+    private final CleanVision.repository.AssignmentRepository assignments;
+    private final CleanVision.repository.UserRepository users;
 
     @GetMapping
     public String dashboard(Model model) {
@@ -128,19 +131,6 @@ public class AdminController {
         return "redirect:/admin/reports/" + publicId;
     }
 
-    @PostMapping("/reports/{publicId}/delete")
-    public String delete(@PathVariable String publicId,
-            @RequestAttribute(name = AuthInterceptor.CURRENT_USER, required = false) User user,
-            RedirectAttributes redirect) {
-        Report report = reportService.byPublicId(publicId);
-        if (user == null || user.getRole() != CleanVision.domain.Role.ADMIN) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
-        }
-        reportService.delete(report);
-        redirect.addFlashAttribute("flashMessage", publicId + " deleted");
-        return "redirect:/admin/reports";
-    }
-
     @GetMapping("/analytics")
     public String analytics(Model model) {
         model.addAttribute("stats", statsService.dashboard());
@@ -150,7 +140,7 @@ public class AdminController {
 
     @GetMapping("/teams")
     public String teams(Model model) {
-        List<Team> all = teams.findByActiveTrueOrderByTeamNameAsc();
+        List<Team> all = teams.findAll(org.springframework.data.domain.Sort.by("teamName"));
         model.addAttribute("teams", all);
         model.addAttribute("workload", all.stream()
                 .collect(java.util.stream.Collectors.toMap(
@@ -158,7 +148,100 @@ public class AdminController {
                         t -> reportService.activeAssignmentCount(t),
                         (a, b) -> a,
                         java.util.LinkedHashMap::new)));
+
+        java.util.Map<Long, String> leaderLogins = new java.util.LinkedHashMap<>();
+        for (Team team : all) {
+            leaderLogins.put(team.getId(),
+                    users.findFirstByTeamIdAndRole(team.getId(), CleanVision.domain.Role.TEAM_LEADER)
+                            .map(User::getEmail)
+                            .orElse(null));
+        }
+        model.addAttribute("leaderLogins", leaderLogins);
         return "admin/teams";
+    }
+
+    @GetMapping("/teams/new")
+    public String newTeam(Model model) {
+        if (!model.containsAttribute("form")) {
+            CleanVision.dto.Forms.TeamForm form = new CleanVision.dto.Forms.TeamForm();
+            form.setActive(true);
+            model.addAttribute("form", form);
+        }
+        model.addAttribute("editing", false);
+        model.addAttribute("teamId", null);
+        return "admin/team-form";
+    }
+
+    @PostMapping("/teams")
+    public String createTeam(@ModelAttribute("form") CleanVision.dto.Forms.TeamForm form,
+            RedirectAttributes redirect) {
+        if (form.getTeamName() == null || form.getTeamName().isBlank()) {
+            redirect.addFlashAttribute("errorMessage", "Team name is required");
+            return "redirect:/admin/teams/new";
+        }
+        Team team = new Team();
+        applyTeamForm(team, form);
+        teams.save(team);
+        redirect.addFlashAttribute("flashMessage", team.getTeamName() + " created");
+        return "redirect:/admin/teams";
+    }
+
+    @GetMapping("/teams/{id}/edit")
+    public String editTeam(@PathVariable Long id, Model model, RedirectAttributes redirect) {
+        Team team = teams.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found"));
+        if (!model.containsAttribute("form")) {
+            CleanVision.dto.Forms.TeamForm form = new CleanVision.dto.Forms.TeamForm();
+            form.setTeamName(team.getTeamName());
+            form.setWard(team.getWard());
+            form.setLeader(team.getLeader());
+            form.setContact(team.getContact());
+            form.setActive(team.isActive());
+            model.addAttribute("form", form);
+        }
+        model.addAttribute("editing", true);
+        model.addAttribute("teamId", team.getId());
+        return "admin/team-form";
+    }
+
+    @PostMapping("/teams/{id}")
+    public String updateTeam(@PathVariable Long id,
+            @ModelAttribute("form") CleanVision.dto.Forms.TeamForm form,
+            RedirectAttributes redirect) {
+        Team team = teams.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found"));
+        if (form.getTeamName() == null || form.getTeamName().isBlank()) {
+            redirect.addFlashAttribute("errorMessage", "Team name is required");
+            return "redirect:/admin/teams/" + id + "/edit";
+        }
+        applyTeamForm(team, form);
+        teams.save(team);
+        redirect.addFlashAttribute("flashMessage", team.getTeamName() + " updated");
+        return "redirect:/admin/teams";
+    }
+
+    @PostMapping("/teams/{id}/delete")
+    public String deleteTeam(@PathVariable Long id, RedirectAttributes redirect) {
+        Team team = teams.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found"));
+        long used = assignments.countByTeamId(team.getId());
+        if (used > 0) {
+            redirect.addFlashAttribute("errorMessage",
+                    team.getTeamName() + " is linked to " + used
+                            + " report assignment(s). Reassign those reports before deleting the team.");
+            return "redirect:/admin/teams";
+        }
+        teams.delete(team);
+        redirect.addFlashAttribute("flashMessage", team.getTeamName() + " deleted");
+        return "redirect:/admin/teams";
+    }
+
+    private void applyTeamForm(Team team, CleanVision.dto.Forms.TeamForm form) {
+        team.setTeamName(form.getTeamName().trim());
+        team.setWard(form.getWard() == null ? null : form.getWard().trim());
+        team.setLeader(form.getLeader() == null ? null : form.getLeader().trim());
+        team.setContact(form.getContact() == null ? null : form.getContact().trim());
+        team.setActive(form.isActive());
     }
 
     private String actor(User user) {

@@ -78,7 +78,16 @@ public class ApiController {
     }
 
     @PostMapping("/ai/classify")
-    public AiClassifyResponse classify(@RequestParam("image") MultipartFile image, HttpSession session) {
+    public AiClassifyResponse classify(@RequestParam("image") MultipartFile image,
+            @RequestAttribute(name = AuthInterceptor.CURRENT_USER, required = false) User user,
+            HttpSession session) {
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Login required");
+        }
+        if (!user.getRole().canReport()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Only citizen accounts can submit reports");
+        }
         String filename = images.store(image);
         AiResult result;
         try {
@@ -96,6 +105,10 @@ public class ApiController {
             HttpSession session) {
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Login required");
+        }
+        if (!user.getRole().canReport()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Only citizen accounts can submit reports");
         }
         try {
             AiResult stored = (AiResult) session.getAttribute(AI_SESSION_PREFIX + form.getImageFile());
@@ -119,7 +132,7 @@ public class ApiController {
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Login required");
         }
-        List<Map<String, Object>> data = (user.getRole() == Role.ADMIN ? reportService.all()
+        List<Map<String, Object>> data = (user.getRole().isOfficer() ? reportService.all()
                 : reportService.byUser(user))
                 .stream().map(this::reportMap).toList();
         return ApiResponse.ok("Reports", data);
@@ -129,7 +142,7 @@ public class ApiController {
     public ApiResponse getReport(@PathVariable String id,
             @RequestAttribute(name = AuthInterceptor.CURRENT_USER, required = false) User user) {
         Report report = find(id);
-        if (user == null || (user.getRole() != Role.ADMIN && !user.getId().equals(report.getReporter().getId()))) {
+        if (user == null || (!user.getRole().isOfficer() && !user.getId().equals(report.getReporter().getId()))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your report");
         }
         Map<String, Object> data = reportMap(report);
@@ -147,7 +160,7 @@ public class ApiController {
     @PutMapping("/reports/{id}/status")
     public ApiResponse updateStatus(@PathVariable String id, @RequestBody StatusRequest body,
             @RequestAttribute(name = AuthInterceptor.CURRENT_USER, required = false) User user) {
-        if (user == null || user.getRole() != Role.ADMIN) {
+        if (user == null || !user.getRole().isOfficer()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Municipal officer access only");
         }
         Report report = find(id);
@@ -189,6 +202,8 @@ public class ApiController {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("publicId", report.getPublicId());
         map.put("reporter", report.getReporter().getName());
+        map.put("reporterEmail", report.getReporter().getEmail());
+        map.put("reporterPhone", report.getReporter().getPhone());
         map.put("imageUrl", "/uploads/" + report.getImageUrl());
         map.put("afterImageUrl", report.getAfterImageUrl() == null ? null
                 : "/uploads/" + report.getAfterImageUrl());

@@ -38,7 +38,7 @@
         </div>
         <div class="col-6 col-lg-3">
             <div class="stat-card p-3">
-                <div class="value" th:text="${#maps.size(stats.byWard)}">0</div>
+                <div class="value" th:text="${stats.byWard.size()}">0</div>
                 <div class="label">Active wards</div>
             </div>
         </div>
@@ -96,7 +96,7 @@
                         <span class="bar-value" th:text="${entry.value}">0</span>
                     </div>
                 </div>
-                <div class="empty-state py-4" th:if="${#map.isEmpty(stats.byWard)}">No ward data yet.</div>
+                <div class="empty-state py-4" th:if="${stats.byWard.isEmpty()}">No ward data yet.</div>
             </div>
         </div>
 

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('My Team')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: navbar}"></header>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<main class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h1 class="h3 section-title mb-1">
+                <i class="bi bi-people-fill me-2"></i><span th:text="${team.teamName}">Team A</span>
+            </h1>
+            <div class="text-muted small">
+                <span th:text="${team.ward != null ? team.ward : 'All wards'}">Ward</span>
+                <span th:if="${team.leader != null}"> · Leader: <span th:text="${team.leader}">Leader</span></span>
+                <span th:if="${team.contact != null}"> · <span th:text="${team.contact}">Contact</span></span>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <span class="badge text-bg-warning align-self-center">
+                <span th:text="${openCount}">0</span> open
+            </span>
+            <span class="badge text-bg-primary align-self-center">
+                <span th:text="${inProgressCount}">0</span> in progress
+            </span>
+            <span class="badge text-bg-success align-self-center">
+                <span th:text="${resolvedCount}">0</span> resolved
+            </span>
+        </div>
+    </div>
+
+    <div class="alert alert-info py-2 small mb-4">
+        <i class="bi bi-signpost-split me-1"></i>Open a report to see the route, mark work started and upload the
+        after-cleanup photo.
+    </div>
+
+    <div class="card-soft p-4">
+        <h2 class="h5 section-title mb-3">Reports assigned to my team</h2>
+
+        <div class="empty-state" th:if="${#lists.isEmpty(reports)}">
+            Nothing is assigned to your team right now. New assignments from the municipal office will appear here.
+        </div>
+
+        <div class="list-group list-group-flush" th:if="${!#lists.isEmpty(reports)}">
+            <div class="list-group-item px-0 d-flex gap-3 align-items-center flex-wrap"
+                 th:each="r : ${reports}">
+                <img th:src="@{'/uploads/' + ${r.imageUrl}}" alt="" class="rounded"
+                     style="width:72px;height:72px;object-fit:cover;background:#10201a">
+                <div class="flex-grow-1" style="min-width:200px">
+                    <div class="fw-semibold">
+                        <span th:text="${r.wasteType.icon}">🗑️</span>
+                        <span th:text="${r.wasteType.label}">Plastic</span>
+                        <span class="text-muted small fw-normal" th:text="'· ' + ${r.publicId}">CV10001</span>
+                    </div>
+                    <div class="small text-muted">
+                        <i class="bi bi-geo-alt me-1"></i>
+                        <span th:text="${r.address != null ? r.address : 'No address'}">Address</span>
+                        <span th:text="${r.ward != null ? ' · ' + r.ward : ''}">Ward</span>
+                    </div>
+                </div>
+                <div class="text-end">
+                    <span class="badge-status badge st-submitted"
+                          th:classappend="'st-' + ${#strings.toLowerCase(r.status.name())}"
+                          th:text="${r.status.label}">Pending</span>
+                    <div class="small text-muted mt-1">
+                        <span class="badge-severity badge" th:classappend="'sev-' + ${r.severity}"
+                              th:text="${r.severity.label}">High</span>
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <a th:if="${r.latitude != null}"
+                       th:href="'https://www.google.com/maps/dir/?api=1&destination=' + ${r.latitude} + ',' + ${r.longitude}"
+                       target="_blank" class="btn btn-sm btn-outline-success">
+                        <i class="bi bi-signpost-split me-1"></i>Route
+                    </a>
+                    <a th:href="@{'/team/reports/' + ${r.publicId}}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-box-arrow-in-right me-1"></i>Open
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

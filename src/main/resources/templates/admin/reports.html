@@ -62,6 +62,7 @@
                     <th>Confidence</th>
                     <th>Severity</th>
                     <th>Location</th>
+                    <th>Citizen</th>
                     <th>Status</th>
                     <th>Reported</th>
                     <th></th>
@@ -94,8 +95,13 @@
                     </td>
                     <td>
                         <span class="badge-status badge st-submitted"
-                              th:classappend="'st-' + ${#strings.replace(report.status.label,' ','_')}"
+                              th:classappend="'st-' + ${#strings.toLowerCase(report.status.name())}"
                               th:text="${report.status.label}">Pending</span>
+                    </td>
+                    <td class="small">
+                        <div class="fw-semibold" th:text="${report.reporter.name}">Name</div>
+                        <div class="text-muted" th:text="${report.reporter.email}">email</div>
+                        <div class="text-muted" th:text="${report.reporter.phone != null ? report.reporter.phone : ''}">phone</div>
                     </td>
                     <td class="small text-muted"
                         th:text="${#temporals.format(report.createdAt, 'dd MMM, HH:mm')}">time</td>
@@ -105,7 +111,7 @@
                     </td>
                 </tr>
                 <tr th:if="${#lists.isEmpty(reports)}">
-                    <td colspan="9" class="text-center text-muted py-4">No reports match this filter.</td>
+                    <td colspan="10" class="text-center text-muted py-4">No reports match this filter.</td>
                 </tr>
                 </tbody>
             </table>

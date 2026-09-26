@@ -38,7 +38,7 @@
                             <div class="small text-muted" th:text="${report.publicId}">CV10001</div>
                         </div>
                         <span class="badge-status badge st-submitted"
-                              th:classappend="'st-' + ${#strings.replace(report.status.label,' ','_')}"
+                              th:classappend="'st-' + ${#strings.toLowerCase(report.status.name())}"
                               th:text="${report.status.label}">Submitted</span>
                     </div>
 

@@ -30,8 +30,15 @@ public class StatsService {
 
     @Transactional(readOnly = true)
     public DashboardStatistics dashboard() {
-        List<Report> all = reports.findAllByOrderByCreatedAtDesc();
+        return build(reports.findAllByOrderByCreatedAtDesc());
+    }
 
+    @Transactional(readOnly = true)
+    public DashboardStatistics forUser(CleanVision.domain.User user) {
+        return build(reports.findByReporterIdOrderByCreatedAtDesc(user.getId()));
+    }
+
+    private DashboardStatistics build(List<Report> all) {
         long pending = all.stream().filter(r -> r.getStatus().ordinal() < ReportStatus.ASSIGNED.ordinal()).count();
         long inProgress = all.stream()
                 .filter(r -> r.getStatus() == ReportStatus.ASSIGNED || r.getStatus() == ReportStatus.IN_PROGRESS)
@@ -56,13 +63,19 @@ public class StatsService {
                     all.stream().filter(r -> r.getSeverity() == severity).count());
         }
 
-        Map<String, Long> byWard = new LinkedHashMap<>();
-        for (Object[] row : reports.countByWardGroup()) {
-            byWard.put(String.valueOf(row[0]), ((Number) row[1]).longValue());
+        Map<String, Long> wardCounts = new LinkedHashMap<>();
+        for (Report report : all) {
+            if (report.getWard() != null && !report.getWard().isBlank()) {
+                wardCounts.merge(report.getWard(), 1L, Long::sum);
+            }
         }
+        Map<String, Long> byWard = new LinkedHashMap<>();
+        wardCounts.entrySet().stream()
+                .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
+                .forEach(entry -> byWard.put(entry.getKey(), entry.getValue()));
 
         List<Map<String, Object>> recent = all.stream().limit(6).map(this::summary).toList();
-        List<Map<String, Object>> hotspots = hotspots();
+        List<Map<String, Object>> hotspots = hotspots(all);
         List<Map<String, Object>> overTime = overTime(all);
 
         return new DashboardStatistics(
@@ -96,13 +109,23 @@ public class StatsService {
         }).toList();
     }
 
-    private List<Map<String, Object>> hotspots() {
+    private List<Map<String, Object>> hotspots(List<Report> all) {
+        Map<String, List<Report>> byWard = new LinkedHashMap<>();
+        for (Report report : all) {
+            if (report.getLatitude() == null || report.getLongitude() == null) {
+                continue;
+            }
+            String ward = report.getWard() == null || report.getWard().isBlank()
+                    ? "Unassigned"
+                    : report.getWard();
+            byWard.computeIfAbsent(ward, key -> new ArrayList<>()).add(report);
+        }
+
         List<Map<String, Object>> result = new ArrayList<>();
-        for (Object[] row : reports.hotspotRows()) {
-            String ward = row[0] == null ? "Unassigned" : String.valueOf(row[0]);
-            long count = ((Number) row[1]).longValue();
-            double lat = row[2] == null ? 0 : ((Number) row[2]).doubleValue();
-            double lng = row[3] == null ? 0 : ((Number) row[3]).doubleValue();
+        byWard.forEach((ward, group) -> {
+            double lat = group.stream().mapToDouble(Report::getLatitude).average().orElse(0);
+            double lng = group.stream().mapToDouble(Report::getLongitude).average().orElse(0);
+            long count = group.size();
 
             Map<String, Object> spot = new LinkedHashMap<>();
             spot.put("ward", ward);
@@ -111,7 +134,7 @@ public class StatsService {
             spot.put("longitude", Math.round(lng * 10000.0) / 10000.0);
             spot.put("level", count >= 4 ? "critical" : count >= 2 ? "watch" : "normal");
             result.add(spot);
-        }
+        });
         result.sort((a, b) -> Long.compare((Long) b.get("count"), (Long) a.get("count")));
         return result;
     }
@@ -149,7 +172,10 @@ public class StatsService {
         map.put("icon", report.getWasteType().getIcon());
         map.put("severity", report.getSeverity().getLabel());
         map.put("status", report.getStatus().getLabel());
+        map.put("statusCode", report.getStatus().name());
+        map.put("severityCode", report.getSeverity().name());
         map.put("ward", report.getWard() == null ? "-" : report.getWard());
+        map.put("address", report.getAddress() == null ? "-" : report.getAddress());
         map.put("imageUrl", report.getImageUrl());
         map.put("createdAt", report.getCreatedAt());
         return map;

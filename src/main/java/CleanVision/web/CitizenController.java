@@ -14,7 +14,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import CleanVision.ai.AiResult;
 import CleanVision.domain.Report;
-import CleanVision.domain.Role;
 import CleanVision.domain.User;
 import CleanVision.domain.WasteCategory;
 import CleanVision.domain.Severity;
@@ -38,13 +37,26 @@ public class CitizenController {
     private final ImageStorageService images;
 
     @GetMapping("/")
-    public String home(Model model) {
-        model.addAttribute("stats", statsService.dashboard());
+    public String home(Model model,
+            @RequestAttribute(name = AuthInterceptor.CURRENT_USER, required = false) User user) {
+        if (user != null && user.getRole().isTeamLeader()) {
+            return "redirect:/team";
+        }
+        boolean mine = user != null && !user.getRole().isOfficer();
+        model.addAttribute("stats", mine ? statsService.forUser(user) : statsService.dashboard());
+        model.addAttribute("scopeMine", mine);
         return "index";
     }
 
     @GetMapping("/report/new")
-    public String newReportPage(Model model) {
+    public String newReportPage(Model model,
+            @RequestAttribute(name = AuthInterceptor.CURRENT_USER, required = false) User user,
+            RedirectAttributes redirect) {
+        if (cannotReport(user)) {
+            redirect.addFlashAttribute("errorMessage",
+                    "Only citizen accounts can report waste. Staff accounts manage reports instead.");
+            return staffHome(user);
+        }
         if (!model.containsAttribute("form")) {
             model.addAttribute("form", new ReportForm());
         }
@@ -58,6 +70,11 @@ public class CitizenController {
             RedirectAttributes redirect) {
         if (user == null) {
             return "redirect:/login?next=/report/new";
+        }
+        if (cannotReport(user)) {
+            redirect.addFlashAttribute("errorMessage",
+                    "Only citizen accounts can report waste. Staff accounts manage reports instead.");
+            return staffHome(user);
         }
 
         try {
@@ -78,9 +95,14 @@ public class CitizenController {
 
     @GetMapping("/my-reports")
     public String myReports(Model model,
-            @RequestAttribute(name = AuthInterceptor.CURRENT_USER, required = false) User user) {
+            @RequestAttribute(name = AuthInterceptor.CURRENT_USER, required = false) User user,
+            RedirectAttributes redirect) {
         if (user == null) {
             return "redirect:/login?next=/my-reports";
+        }
+        if (cannotReport(user)) {
+            redirect.addFlashAttribute("errorMessage", "Staff accounts do not file reports.");
+            return staffHome(user);
         }
         List<Report> reports = reportService.byUser(user);
         model.addAttribute("reports", reports);
@@ -93,7 +115,8 @@ public class CitizenController {
             @RequestAttribute(name = AuthInterceptor.CURRENT_USER, required = false) User user,
             Model model) {
         Report report = reportService.byPublicId(publicId);
-        boolean allowed = user != null && (user.getRole() == Role.ADMIN || user.getId().equals(report.getReporter().getId()));
+        boolean allowed = user != null
+                && (user.getRole().isOfficer() || user.getId().equals(report.getReporter().getId()));
         if (!allowed) {
             throw new AppException("You do not have access to report " + publicId);
         }
@@ -102,6 +125,38 @@ public class CitizenController {
         model.addAttribute("timeline", reportService.timeline(report));
         model.addAttribute("assignment", reportService.activeAssignment(report));
         return "report/detail";
+    }
+
+    @PostMapping("/reports/{publicId}/delete")
+    public String deleteOwnReport(@PathVariable String publicId,
+            @RequestAttribute(name = AuthInterceptor.CURRENT_USER, required = false) User user,
+            RedirectAttributes redirect) {
+        if (user == null) {
+            return "redirect:/login?next=/reports/" + publicId;
+        }
+        if (cannotReport(user)) {
+            redirect.addFlashAttribute("errorMessage",
+                    "Report deletion belongs to citizens. Staff accounts cannot delete reports.");
+            return staffHome(user);
+        }
+
+        Report report = reportService.byPublicId(publicId);
+        if (!user.getId().equals(report.getReporter().getId())) {
+            redirect.addFlashAttribute("errorMessage", "You can only delete your own reports.");
+            return "redirect:/my-reports";
+        }
+
+        reportService.delete(report);
+        redirect.addFlashAttribute("flashMessage", "Report " + publicId + " deleted permanently.");
+        return "redirect:/my-reports";
+    }
+
+    private boolean cannotReport(User user) {
+        return user != null && !user.getRole().canReport();
+    }
+
+    private String staffHome(User user) {
+        return user.getRole().isOfficer() ? "redirect:/admin" : "redirect:/team";
     }
 
     private AiResult rebuild(AiResult stored, ReportForm form) {

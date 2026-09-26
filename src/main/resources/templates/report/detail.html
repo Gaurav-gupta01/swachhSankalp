@@ -11,7 +11,7 @@
             <h1 class="h3 section-title mb-1">
                 <span th:text="${report.publicId}">CV10001</span>
                 <span class="badge-status badge st-submitted fs-6 ms-2"
-                      th:classappend="'st-' + ${#strings.replace(report.status.label,' ','_')}"
+                      th:classappend="'st-' + ${#strings.toLowerCase(report.status.name())}"
                       th:text="${report.status.label}">Submitted</span>
             </h1>
             <div class="text-muted small"
@@ -104,6 +104,20 @@
                     </li>
                 </ul>
                 <div class="text-muted small" th:if="${#lists.isEmpty(timeline)}">No updates yet.</div>
+            </div>
+
+            <div class="card-soft p-4"
+                 th:if="${currentUser != null and !currentUser.role.isOfficer()}">
+                <h2 class="h6 text-uppercase text-muted mb-2">Delete this report</h2>
+                <div class="small text-muted mb-3">
+                    You can remove your report and its photo at any time. This cannot be undone.
+                </div>
+                <form th:action="@{'/reports/' + ${report.publicId} + '/delete'}" method="post"
+                      onsubmit="return confirm('Delete this report permanently?');">
+                    <button class="btn btn-outline-danger btn-sm" type="submit">
+                        <i class="bi bi-trash me-1"></i>Delete my report
+                    </button>
+                </form>
             </div>
         </div>
     </div>

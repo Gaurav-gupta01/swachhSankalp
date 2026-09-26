@@ -43,17 +43,33 @@ public class AuthInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        if ((uri.startsWith("/admin") || uri.startsWith("/api/dashboard")) && user.getRole() != Role.ADMIN) {
-            if (uri.startsWith("/api/")) {
-                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            } else {
-                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Municipal officer access only");
+        if (uri.startsWith("/team")) {
+            if (user.getRole() != Role.TEAM_LEADER) {
+                return forbidden(response, uri, "Team leader access only");
             }
-            return false;
+        } else if (uri.startsWith("/admin/users") || uri.startsWith("/api/users")) {
+            if (user.getRole() != Role.SUPER_ADMIN) {
+                return forbidden(response, uri, "Super admin access only");
+            }
+        } else if (uri.startsWith("/admin") || uri.startsWith("/api/dashboard")) {
+            if (!user.getRole().isOfficer()) {
+                return forbidden(response, uri, "Municipal officer access only");
+            }
         }
 
         request.setAttribute(CURRENT_USER, user);
         return true;
+    }
+
+    private boolean forbidden(HttpServletResponse response, String uri, String message) throws IOException {
+        if (uri.startsWith("/api/")) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"success\":false,\"message\":\"" + message + "\"}");
+        } else {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, message);
+        }
+        return false;
     }
 
     public User resolve(HttpServletRequest request) {
@@ -81,7 +97,7 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     private boolean isPublic(String uri, String method) {
         if (uri.startsWith("/css/") || uri.startsWith("/js/") || uri.startsWith("/images/")
-                || uri.startsWith("/uploads/") || uri.startsWith("/webjars/")) {
+                || uri.startsWith("/uploads/") || uri.startsWith("/webjars/") || uri.startsWith("/vendor/")) {
             return true;
         }
         if (uri.equals("/") || uri.equals("/error") || uri.equals("/favicon.ico")) {

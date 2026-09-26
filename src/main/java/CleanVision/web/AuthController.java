@@ -95,11 +95,17 @@ public class AuthController {
 
     private String safeRedirect(String next, User user) {
         if (next != null && next.startsWith("/") && !next.startsWith("//")) {
-            if (next.startsWith("/admin") && user.getRole() != Role.ADMIN) {
+            if (next.startsWith("/admin") && !user.getRole().isOfficer()) {
+                return "redirect:/";
+            }
+            if (next.startsWith("/team") && !user.getRole().isTeamLeader()) {
                 return "redirect:/";
             }
             return "redirect:" + next;
         }
-        return user.getRole() == Role.ADMIN ? "redirect:/admin" : "redirect:/";
+        if (user.getRole().isOfficer()) {
+            return "redirect:/admin";
+        }
+        return user.getRole().isTeamLeader() ? "redirect:/team" : "redirect:/";
     }
 }

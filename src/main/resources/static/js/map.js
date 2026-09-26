@@ -2,7 +2,13 @@
     'use strict';
 
     var mapElement = document.getElementById('map');
-    if (!mapElement || typeof L === 'undefined') return;
+    if (!mapElement) return;
+
+    if (typeof L === 'undefined') {
+        mapElement.innerHTML = '<div class="empty-state d-flex align-items-center justify-content-center h-100">' +
+            'Map library failed to load. Check your connection and refresh.</div>';
+        return;
+    }
 
     var points = (typeof geoPoints !== 'undefined' && Array.isArray(geoPoints)) ? geoPoints : [];
     var colors = { HIGH: '#e0453a', MEDIUM: '#f0a92c', LOW: '#2fa86b' };

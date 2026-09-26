@@ -77,6 +77,14 @@ public class ReportService {
     }
 
     @Transactional
+    public List<Report> byTeam(CleanVision.domain.Team team) {
+        return assignments.findByTeamIdAndActiveTrue(team.getId()).stream()
+                .map(Assignment::getReport)
+                .sorted(java.util.Comparator.comparing(Report::getCreatedAt,
+                        java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())))
+                .toList();
+    }
+
     public Report changeStatus(Report report, ReportStatus target, String updatedBy, String note) {
         if (report.getStatus() == target) {
             return report;
