@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('My Reports')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: navbar}"></header>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<main class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h1 class="h3 section-title mb-1">My Reports</h1>
+            <div class="text-muted small">
+                <span th:text="${#lists.size(reports)}">0</span> report(s) submitted by you.
+            </div>
+        </div>
+        <a th:href="@{/report/new}" class="btn btn-accent">
+            <i class="bi bi-camera-fill me-1"></i>New Report
+        </a>
+    </div>
+
+    <div class="empty-state" th:if="${#lists.isEmpty(reports)}">
+        <i class="bi bi-camera fs-1 d-block mb-2"></i>
+        You have not reported any waste yet.<br>
+        <a th:href="@{/report/new}" class="fw-semibold">Take your first photo →</a>
+    </div>
+
+    <div class="row g-4" th:if="${!#lists.isEmpty(reports)}">
+        <div class="col-md-6 col-xl-4" th:each="report : ${reports}">
+            <div class="card-soft h-100 d-flex flex-column">
+                <img class="report-thumb" th:src="@{'/uploads/' + ${report.imageUrl}}" alt="Reported waste">
+                <div class="p-3 d-flex flex-column flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <div class="fw-semibold">
+                                <span th:text="${report.wasteType.icon}">🗑️</span>
+                                <span th:text="${report.wasteType.label}">Plastic Waste</span>
+                            </div>
+                            <div class="small text-muted" th:text="${report.publicId}">CV10001</div>
+                        </div>
+                        <span class="badge-status badge st-submitted"
+                              th:classappend="'st-' + ${#strings.replace(report.status.label,' ','_')}"
+                              th:text="${report.status.label}">Submitted</span>
+                    </div>
+
+                    <div class="small text-muted mb-2">
+                        <i class="bi bi-geo-alt me-1"></i>
+                        <span th:text="${report.ward != null ? report.ward : 'Location pending'}">Ward 5</span>
+                        <span th:if="${report.address != null}" th:text="' · ' + ${report.address}"></span>
+                    </div>
+
+                    <div class="small text-muted mb-3">
+                        <i class="bi bi-clock me-1"></i>
+                        <span th:text="${#temporals.format(report.createdAt, 'dd MMM yyyy, HH:mm')}">26 Sep 2026</span>
+                        <span class="ms-2 badge badge-severity"
+                              th:classappend="'sev-' + ${report.severity}"
+                              th:text="${report.severity.label}">High</span>
+                    </div>
+
+                    <div class="mt-auto d-flex justify-content-between align-items-center">
+                        <span class="small text-muted"
+                              th:text="'AI confidence ' + ${#numbers.formatDecimal(report.confidence * 100, 1, 0)} + '%'">94%</span>
+                        <a class="btn btn-sm btn-outline-primary" th:href="@{'/reports/' + ${report.publicId}}">View</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Municipal Dashboard')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: navbar}"></header>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<main class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h1 class="h3 section-title mb-1">CleanVision Admin</h1>
+            <div class="text-muted small">Municipal waste reporting control centre</div>
+        </div>
+        <div class="btn-group">
+            <a th:href="@{/admin/reports}" class="btn btn-outline-primary btn-sm">All Reports</a>
+            <a th:href="@{/admin/analytics}" class="btn btn-outline-primary btn-sm">Analytics</a>
+            <a th:href="@{/admin/teams}" class="btn btn-outline-primary btn-sm">Teams</a>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="stat-card p-3">
+                <div class="value" th:text="${stats.totalReports}">1284</div>
+                <div class="label">Total Reports</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="stat-card p-3">
+                <div class="value" th:text="${stats.pending}">126</div>
+                <div class="label">Pending</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="stat-card p-3">
+                <div class="value" th:text="${stats.inProgress}">48</div>
+                <div class="label">In Progress</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="stat-card p-3">
+                <div class="value" th:text="${stats.resolved}">1110</div>
+                <div class="label">Resolved</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <div class="card-soft p-3">
+                <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+                    <h2 class="h6 section-title mb-0">Waste reports map</h2>
+                    <span class="small text-muted">
+                        <span class="badge" style="background:#2fa86b">Low</span>
+                        <span class="badge" style="background:#f0a92c">Medium</span>
+                        <span class="badge" style="background:#e0453a">High</span>
+                    </span>
+                </div>
+                <div id="map" class="map-box"></div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card-soft p-4 h-100">
+                <h2 class="h6 section-title mb-3">Waste by category</h2>
+                <div class="empty-state py-4" th:if="${#map.isEmpty(stats.byCategory)}">No reports yet.</div>
+                <div th:each="entry : ${stats.byCategory}">
+                    <div class="bar-row">
+                        <span class="bar-label" th:text="${entry.key}">Plastic</span>
+                        <span class="bar-track">
+                            <span class="bar-fill" style="display:block"
+                                  th:style="'width:' + ${entry.value * 100 / (stats.totalReports == 0 ? 1 : stats.totalReports)} + '%'"></span>
+                        </span>
+                        <span class="bar-value"
+                              th:text="${entry.value * 100 / (stats.totalReports == 0 ? 1 : stats.totalReports)} + '%'">38%</span>
+                    </div>
+                </div>
+
+                <hr>
+                <h2 class="h6 section-title mb-3">Waste by ward</h2>
+                <div class="empty-state py-3" th:if="${#map.isEmpty(stats.byWard)}">No ward data yet.</div>
+                <div th:each="entry : ${stats.byWard}">
+                    <div class="bar-row">
+                        <span class="bar-label" th:text="${entry.key}">Ward 1</span>
+                        <span class="bar-track">
+                            <span class="bar-fill" style="display:block"
+                                  th:style="'width:' + ${entry.value * 100 / (stats.totalReports == 0 ? 1 : stats.totalReports)} + '%'"></span>
+                        </span>
+                        <span class="bar-value" th:text="${entry.value}">7</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-soft p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="h6 section-title mb-0">Latest reports</h2>
+            <a th:href="@{/admin/reports}" class="small">View all →</a>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th>Report</th>
+                    <th>Type</th>
+                    <th>Severity</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                    <th>Reported</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="r : ${stats.recentReports}">
+                    <td class="fw-semibold" th:text="${r.publicId}">CV10001</td>
+                    <td><span th:text="${r.icon}"></span> <span th:text="${r.wasteType}">Plastic</span></td>
+                    <td><span class="badge-severity badge"
+                              th:classappend="'sev-' + ${#strings.toUpperCase(r.severity)}"
+                              th:text="${r.severity}">High</span></td>
+                    <td th:text="${r.ward}">Ward 5</td>
+                    <td><span class="badge-status badge st-submitted"
+                              th:classappend="'st-' + ${#strings.replace(r.status,' ','_')}"
+                              th:text="${r.status}">Pending</span></td>
+                    <td class="small text-muted" th:text="${#temporals.format(r.createdAt, 'dd MMM, HH:mm')}">time</td>
+                    <td class="text-end">
+                        <a class="btn btn-sm btn-outline-primary"
+                           th:href="@{'/admin/reports/' + ${r.publicId}}">Open</a>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(stats.recentReports)}">
+                    <td colspan="7" class="text-center text-muted py-4">No reports yet.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:inline="javascript">
+    var geoPoints = /*[[${geoPoints}]]*/ [];
+</script>
+<script th:src="@{/js/map.js}"></script>
+</body>
+</html>

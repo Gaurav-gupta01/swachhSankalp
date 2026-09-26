@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${'Report ' + report.publicId})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: navbar}"></header>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<main class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h1 class="h3 section-title mb-1">
+                <span th:text="${report.publicId}">CV10001</span>
+                <span class="badge-status badge st-submitted fs-6 ms-2"
+                      th:classappend="'st-' + ${#strings.replace(report.status.label,' ','_')}"
+                      th:text="${report.status.label}">Submitted</span>
+            </h1>
+            <div class="text-muted small"
+                 th:text="'Reported on ' + ${#temporals.format(report.createdAt, 'dd MMM yyyy, HH:mm')}">Date</div>
+        </div>
+        <a th:href="@{/my-reports}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Back
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card-soft p-4 mb-4">
+                <h2 class="h6 text-uppercase text-muted mb-3">Waste photo</h2>
+                <img class="preview-img mb-3" th:src="@{'/uploads/' + ${report.imageUrl}}" alt="Reported waste">
+
+                <div class="row g-3">
+                    <div class="col-sm-4">
+                        <div class="text-muted small">Waste type</div>
+                        <div class="fw-semibold">
+                            <span th:text="${report.wasteType.icon}">🗑️</span>
+                            <span th:text="${report.wasteType.label}">Plastic</span>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="text-muted small">AI confidence</div>
+                        <span class="confidence-pill"
+                              th:classappend="${report.confidence < 0.6 ? 'low' : ''}"
+                              th:text="${#numbers.formatDecimal(report.confidence * 100, 1, 0)} + '%'">94%</span>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="text-muted small">Severity</div>
+                        <div class="severity-track severity-HIGH" style="max-width:160px"
+                             th:classappend="'severity-' + ${report.severity}">
+                            <span class="severity-fill"
+                                  th:style="'width:' + ${report.severity.barPercent()} + '%'"></span>
+                        </div>
+                        <div class="small fw-semibold" th:text="${report.severity.label}">High</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-soft p-4" th:if="${report.afterImageUrl != null}">
+                <h2 class="h6 text-uppercase text-muted mb-3">Cleanup verification</h2>
+                <div class="compare-grid">
+                    <div>
+                        <div class="small text-muted mb-1">Before</div>
+                        <img th:src="@{'/uploads/' + ${report.imageUrl}}" alt="Before cleanup">
+                    </div>
+                    <div>
+                        <div class="small text-muted mb-1">After</div>
+                        <img th:src="@{'/uploads/' + ${report.afterImageUrl}}" alt="After cleanup">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card-soft p-4 mb-4">
+                <h2 class="h6 text-uppercase text-muted mb-3">Location</h2>
+                <div class="mb-2"><i class="bi bi-geo-alt me-2 text-success"></i>
+                    <span th:text="${report.address != null ? report.address : 'No address provided'}">Address</span>
+                </div>
+                <div class="mb-2"><i class="bi bi-map me-2 text-success"></i>
+                    <span th:text="${report.ward != null ? report.ward : 'Ward not specified'}">Ward 5</span>
+                </div>
+                <div class="small text-muted" th:if="${report.latitude != null}"
+                     th:text="'Lat ' + ${#numbers.formatDecimal(report.latitude, 1, 5)} + ' · Lng ' + ${#numbers.formatDecimal(report.longitude, 1, 5)}">Coords</div>
+                <div class="mt-3 small text-muted" th:if="${report.description != null}"
+                     th:text="${report.description}">Description</div>
+            </div>
+
+            <div class="card-soft p-4 mb-4" th:if="${assignment != null}">
+                <h2 class="h6 text-uppercase text-muted mb-3">Cleanup team</h2>
+                <div class="fw-semibold" th:text="${assignment.team.teamName}">Team B</div>
+                <div class="small text-muted"
+                     th:text="'Leader: ' + ${assignment.team.leader} + ' · ' + ${assignment.team.contact}">Leader</div>
+                <div class="small text-muted"
+                     th:text="'Assigned on ' + ${#temporals.format(assignment.assignedAt, 'dd MMM yyyy, HH:mm')}">Assigned</div>
+            </div>
+
+            <div class="card-soft p-4">
+                <h2 class="h6 text-uppercase text-muted mb-3">Status history</h2>
+                <ul class="timeline mb-0">
+                    <li th:each="entry : ${timeline}">
+                        <div class="fw-semibold" th:text="${entry.status.label}">Submitted</div>
+                        <div class="small text-muted" th:text="${entry.note}">Note</div>
+                        <div class="small text-muted"
+                             th:text="${#temporals.format(entry.timestamp, 'dd MMM yyyy, HH:mm')} + ' · ' + ${entry.updatedBy}">Time</div>
+                    </li>
+                </ul>
+                <div class="text-muted small" th:if="${#lists.isEmpty(timeline)}">No updates yet.</div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Analytics')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: navbar}"></header>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<main class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h1 class="h3 section-title mb-1">Waste Analytics</h1>
+            <div class="text-muted small">Where the waste is, what it is, and how fast it gets cleared.</div>
+        </div>
+        <a th:href="@{/admin}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+        </a>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="stat-card p-3">
+                <div class="value" th:text="${stats.totalReports}">0</div>
+                <div class="label">Reports</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="stat-card p-3">
+                <div class="value" th:text="${stats.averageConfidence} + '%'">0%</div>
+                <div class="label">Avg AI confidence</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="stat-card p-3">
+                <div class="value"
+                     th:text="${stats.totalReports == 0 ? 0 : stats.resolved * 100 / stats.totalReports} + '%'">0%</div>
+                <div class="label">Resolved rate</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="stat-card p-3">
+                <div class="value" th:text="${#maps.size(stats.byWard)}">0</div>
+                <div class="label">Active wards</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="card-soft p-4 h-100">
+                <h2 class="h6 section-title mb-3">Waste by category</h2>
+                <div style="height:300px"><canvas id="categoryChart"></canvas></div>
+                <div class="table-responsive mt-3" id="categoryFallback">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>Category</th><th class="text-end">Reports</th></tr></thead>
+                        <tbody>
+                        <tr th:each="entry : ${stats.byCategory}">
+                            <td th:text="${entry.key}">Plastic</td>
+                            <td class="text-end" th:text="${entry.value}">0</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card-soft p-4 h-100">
+                <h2 class="h6 section-title mb-3">Reports over time (last 7 days)</h2>
+                <div style="height:300px"><canvas id="timeChart"></canvas></div>
+                <div class="table-responsive mt-3" id="timeFallback">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>Day</th><th class="text-end">Reports</th></tr></thead>
+                        <tbody>
+                        <tr th:each="point : ${stats.reportsOverTime}">
+                            <td th:text="${point.day}">Mon</td>
+                            <td class="text-end" th:text="${point.count}">0</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="card-soft p-4 h-100">
+                <h2 class="h6 section-title mb-3">Waste by area</h2>
+                <div th:each="entry : ${stats.byWard}">
+                    <div class="bar-row">
+                        <span class="bar-label" th:text="${entry.key}">Ward 1</span>
+                        <span class="bar-track">
+                            <span class="bar-fill" style="display:block"
+                                  th:style="'width:' + ${entry.value * 100 / (stats.totalReports == 0 ? 1 : stats.totalReports)} + '%'"></span>
+                        </span>
+                        <span class="bar-value" th:text="${entry.value}">0</span>
+                    </div>
+                </div>
+                <div class="empty-state py-4" th:if="${#map.isEmpty(stats.byWard)}">No ward data yet.</div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card-soft p-4 h-100">
+                <h2 class="h6 section-title mb-3">Waste hotspots</h2>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead class="table-light">
+                        <tr><th>Ward</th><th class="text-end">Reports</th><th>Level</th><th>Coordinates</th></tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="spot : ${stats.hotspots}">
+                            <td class="fw-semibold" th:text="${spot.ward}">Ward 5</td>
+                            <td class="text-end" th:text="${spot.count}">6</td>
+                            <td>
+                                <span class="badge"
+                                      th:classappend="${spot.level == 'critical' ? 'text-bg-danger' : spot.level == 'watch' ? 'text-bg-warning' : 'text-bg-success'}"
+                                      th:text="${#strings.toUpperCase(spot.level)}">CRITICAL</span>
+                            </td>
+                            <td class="small text-muted"
+                                th:text="${spot.latitude} + ', ' + ${spot.longitude}">15.27, 73.95</td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(stats.hotspots)}">
+                            <td colspan="4" class="text-center text-muted py-3">No geotagged reports yet.</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="form-text mt-2">
+                    Repeated hotspots are candidates for extra bins, a higher collection frequency or an awareness drive.
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script th:inline="javascript">
+    var categoryLabels = /*[[${stats.byCategory.keySet()}]]*/ [];
+    var categoryValues = /*[[${stats.byCategory.values()}]]*/ [];
+    var wardLabels = /*[[${stats.byWard.keySet()}]]*/ [];
+    var wardValues = /*[[${stats.byWard.values()}]]*/ [];
+    var timeSeries = /*[[${stats.reportsOverTime}]]*/ [];
+</script>
+<script th:src="@{/js/analytics.js}"></script>
+</body>
+</html>

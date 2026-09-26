@@ -1,0 +1,157 @@
+package CleanVision.service;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import CleanVision.domain.Report;
+import CleanVision.domain.ReportStatus;
+import CleanVision.domain.Severity;
+import CleanVision.domain.WasteCategory;
+import CleanVision.dto.Forms.DashboardStatistics;
+import CleanVision.repository.ReportRepository;
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class StatsService {
+
+    private static final DateTimeFormatter DAY_FORMAT = DateTimeFormatter.ofPattern("dd MMM");
+
+    private final ReportRepository reports;
+
+    @Transactional(readOnly = true)
+    public DashboardStatistics dashboard() {
+        List<Report> all = reports.findAllByOrderByCreatedAtDesc();
+
+        long pending = all.stream().filter(r -> r.getStatus().ordinal() < ReportStatus.ASSIGNED.ordinal()).count();
+        long inProgress = all.stream()
+                .filter(r -> r.getStatus() == ReportStatus.ASSIGNED || r.getStatus() == ReportStatus.IN_PROGRESS)
+                .count();
+        long resolved = all.stream()
+                .filter(r -> r.getStatus() == ReportStatus.RESOLVED || r.getStatus() == ReportStatus.CLOSED)
+                .count();
+
+        double averageConfidence = all.isEmpty() ? 0
+                : all.stream().mapToDouble(Report::getConfidence).average().orElse(0);
+
+        Map<String, Long> byCategory = new LinkedHashMap<>();
+        for (WasteCategory category : WasteCategory.values()) {
+            byCategory.put(category.getLabel(), all.stream()
+                    .filter(r -> r.getWasteType() == category).count());
+        }
+        byCategory.values().removeIf(count -> count == 0);
+
+        Map<String, Long> bySeverity = new LinkedHashMap<>();
+        for (Severity severity : Severity.values()) {
+            bySeverity.put(severity.getLabel(),
+                    all.stream().filter(r -> r.getSeverity() == severity).count());
+        }
+
+        Map<String, Long> byWard = new LinkedHashMap<>();
+        for (Object[] row : reports.countByWardGroup()) {
+            byWard.put(String.valueOf(row[0]), ((Number) row[1]).longValue());
+        }
+
+        List<Map<String, Object>> recent = all.stream().limit(6).map(this::summary).toList();
+        List<Map<String, Object>> hotspots = hotspots();
+        List<Map<String, Object>> overTime = overTime(all);
+
+        return new DashboardStatistics(
+                all.size(),
+                pending,
+                inProgress,
+                resolved,
+                Math.round(averageConfidence * 1000) / 10.0,
+                byCategory,
+                bySeverity,
+                byWard,
+                recent,
+                hotspots,
+                overTime);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> allReportsGeo() {
+        return reports.findByLatitudeIsNotNullAndLongitudeIsNotNull().stream().map(report -> {
+            Map<String, Object> point = new LinkedHashMap<>();
+            point.put("publicId", report.getPublicId());
+            point.put("wasteType", report.getWasteType().getLabel());
+            point.put("severity", report.getSeverity().name());
+            point.put("severityLabel", report.getSeverity().getLabel());
+            point.put("status", report.getStatus().getLabel());
+            point.put("latitude", report.getLatitude());
+            point.put("longitude", report.getLongitude());
+            point.put("ward", report.getWard() == null ? "" : report.getWard());
+            point.put("address", report.getAddress() == null ? "" : report.getAddress());
+            return point;
+        }).toList();
+    }
+
+    private List<Map<String, Object>> hotspots() {
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Object[] row : reports.hotspotRows()) {
+            String ward = row[0] == null ? "Unassigned" : String.valueOf(row[0]);
+            long count = ((Number) row[1]).longValue();
+            double lat = row[2] == null ? 0 : ((Number) row[2]).doubleValue();
+            double lng = row[3] == null ? 0 : ((Number) row[3]).doubleValue();
+
+            Map<String, Object> spot = new LinkedHashMap<>();
+            spot.put("ward", ward);
+            spot.put("count", count);
+            spot.put("latitude", Math.round(lat * 10000.0) / 10000.0);
+            spot.put("longitude", Math.round(lng * 10000.0) / 10000.0);
+            spot.put("level", count >= 4 ? "critical" : count >= 2 ? "watch" : "normal");
+            result.add(spot);
+        }
+        result.sort((a, b) -> Long.compare((Long) b.get("count"), (Long) a.get("count")));
+        return result;
+    }
+
+    private List<Map<String, Object>> overTime(List<Report> all) {
+        LocalDate today = LocalDate.now();
+        Map<LocalDate, Long> byDay = new TreeMap<>();
+        for (int offset = 6; offset >= 0; offset--) {
+            byDay.put(today.minusDays(offset), 0L);
+        }
+        for (Report report : all) {
+            if (report.getCreatedAt() == null) {
+                continue;
+            }
+            LocalDate day = report.getCreatedAt().toLocalDate();
+            if (byDay.containsKey(day)) {
+                byDay.put(day, byDay.get(day) + 1);
+            }
+        }
+
+        List<Map<String, Object>> series = new ArrayList<>();
+        byDay.forEach((day, count) -> {
+            Map<String, Object> point = new LinkedHashMap<>();
+            point.put("day", day.format(DAY_FORMAT));
+            point.put("count", count);
+            series.add(point);
+        });
+        return series;
+    }
+
+    private Map<String, Object> summary(Report report) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("publicId", report.getPublicId());
+        map.put("wasteType", report.getWasteType().getLabel());
+        map.put("icon", report.getWasteType().getIcon());
+        map.put("severity", report.getSeverity().getLabel());
+        map.put("status", report.getStatus().getLabel());
+        map.put("ward", report.getWard() == null ? "-" : report.getWard());
+        map.put("imageUrl", report.getImageUrl());
+        map.put("createdAt", report.getCreatedAt());
+        return map;
+    }
+}
