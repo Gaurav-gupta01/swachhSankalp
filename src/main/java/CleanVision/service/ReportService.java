@@ -55,7 +55,7 @@ public class ReportService {
         report = reports.save(report);
 
         record(report, ReportStatus.SUBMITTED, reporter.getName(), "Report submitted by citizen");
-        record(report, ReportStatus.AI_ANALYZED, "CleanVision AI",
+        record(report, ReportStatus.AI_ANALYZED, "Swachh Sankalp AI",
                 ai.category().getLabel() + " at " + Math.round(ai.confidence() * 100) + "% confidence - " + ai.reason());
         return report;
     }
@@ -123,6 +123,52 @@ public class ReportService {
     }
 
     @Transactional
+    public Report markCollected(Report report, Double quantityKg, Double teamLatitude,
+            Double teamLongitude, String updatedBy) {
+        if (report.getStatus().ordinal() < ReportStatus.IN_PROGRESS.ordinal()) {
+            throw new AppException("Start the cleanup before marking " + report.getPublicId()
+                    + " as collected");
+        }
+        if (report.getStatus().ordinal() >= ReportStatus.RESOLVED.ordinal()) {
+            throw new AppException(report.getPublicId() + " is already "
+                    + report.getStatus().getLabel().toLowerCase());
+        }
+
+        report.setQuantityKg(quantityKg);
+        report.setTeamLatitude(teamLatitude != null ? teamLatitude : report.getLatitude());
+        report.setTeamLongitude(teamLongitude != null ? teamLongitude : report.getLongitude());
+        report.setCollectedAt(LocalDateTime.now());
+        reports.save(report);
+
+        String quantity = quantityKg == null ? "" : " · ~" + quantityKg + " kg";
+        changeStatus(report, ReportStatus.COLLECTED, updatedBy,
+                "Waste collected by cleanup team" + quantity);
+        return report;
+    }
+
+    @Transactional
+    public Report confirmDisposal(Report report, CleanVision.domain.DisposalFacility facility,
+            Double distanceMeters, Double durationSeconds, String updatedBy) {
+        if (facility == null) {
+            throw new AppException("Choose a disposal facility first");
+        }
+        if (report.getStatus().ordinal() < ReportStatus.COLLECTED.ordinal()) {
+            throw new AppException("Mark " + report.getPublicId() + " as collected before confirming disposal");
+        }
+
+        report.setDisposalFacility(facility);
+        report.setDisposedAt(LocalDateTime.now());
+        report.setRouteDistanceM(distanceMeters);
+        report.setRouteDurationS(durationSeconds);
+        reports.save(report);
+
+        changeStatus(report, ReportStatus.RESOLVED, updatedBy,
+                "Disposal confirmed at " + facility.getName() + " ("
+                        + facility.getFacilityType().getLabel() + ")");
+        return report;
+    }
+
+    @Transactional
     public Report attachAfterImage(Report report, MultipartFile file, String updatedBy) {
         String filename = images.store(file);
         String previous = report.getAfterImageUrl();
@@ -130,12 +176,17 @@ public class ReportService {
         reports.save(report);
         images.delete(previous);
 
-        if (report.getStatus().ordinal() < ReportStatus.RESOLVED.ordinal()) {
-            changeStatus(report, ReportStatus.RESOLVED, updatedBy, "After-cleanup photo uploaded");
-        } else {
+        if (report.getStatus().ordinal() >= ReportStatus.RESOLVED.ordinal()) {
             record(report, report.getStatus(), updatedBy, "After-cleanup photo updated");
+        } else {
+            record(report, report.getStatus(), updatedBy, "After-cleanup photo uploaded");
         }
         return report;
+    }
+
+    @Transactional(readOnly = true)
+    public Report latestCompletedWithAfterImage() {
+        return reports.findFirstByAfterImageUrlIsNotNullOrderByCreatedAtDesc().orElse(null);
     }
 
     @Transactional(readOnly = true)

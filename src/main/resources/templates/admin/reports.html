@@ -62,8 +62,9 @@
                     <th>Confidence</th>
                     <th>Severity</th>
                     <th>Location</th>
-                    <th>Citizen</th>
                     <th>Status</th>
+                    <th>Citizen</th>
+                    <th>Disposal</th>
                     <th>Reported</th>
                     <th></th>
                 </tr>
@@ -103,6 +104,13 @@
                         <div class="text-muted" th:text="${report.reporter.email}">email</div>
                         <div class="text-muted" th:text="${report.reporter.phone != null ? report.reporter.phone : ''}">phone</div>
                     </td>
+                    <td class="small">
+                        <span class="badge text-bg-success" th:if="${report.disposalFacility != null}"
+                              th:text="${report.disposalFacility.name}">Facility</span>
+                        <span class="badge text-bg-warning" th:if="${report.disposalFacility == null and report.collectedAt != null}">
+                            Disposal pending</span>
+                        <span class="text-muted" th:if="${report.disposalFacility == null and report.collectedAt == null}">—</span>
+                    </td>
                     <td class="small text-muted"
                         th:text="${#temporals.format(report.createdAt, 'dd MMM, HH:mm')}">time</td>
                     <td class="text-end">
@@ -111,7 +119,7 @@
                     </td>
                 </tr>
                 <tr th:if="${#lists.isEmpty(reports)}">
-                    <td colspan="10" class="text-center text-muted py-4">No reports match this filter.</td>
+                    <td colspan="11" class="text-center text-muted py-4">No reports match this filter.</td>
                 </tr>
                 </tbody>
             </table>

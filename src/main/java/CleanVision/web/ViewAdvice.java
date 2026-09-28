@@ -78,7 +78,7 @@ public class ViewAdvice {
 
     @ModelAttribute("appTitle")
     public String appTitle() {
-        return "CleanVision AI";
+        return "Swachh Sankalp AI";
     }
 
     private boolean isApi(HttpServletRequest request) {

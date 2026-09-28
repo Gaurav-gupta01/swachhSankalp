@@ -12,8 +12,9 @@ public enum ReportStatus {
     VERIFIED(3, "Verified"),
     ASSIGNED(4, "Assigned"),
     IN_PROGRESS(5, "In Progress"),
-    RESOLVED(6, "Resolved"),
-    CLOSED(7, "Closed");
+    COLLECTED(6, "Collected"),
+    RESOLVED(7, "Resolved"),
+    CLOSED(8, "Closed");
 
     private final int order;
     private final String label;

@@ -71,7 +71,7 @@ public class AuthController {
             startSession(request, user);
             redirect.addFlashAttribute("flashMessage",
                     "Account created. Report waste the moment you see it.");
-            return "redirect:/";
+            return "redirect:" + user.getRole().dashboardPath();
         } catch (AppException ex) {
             redirect.addFlashAttribute("form", form);
             redirect.addFlashAttribute("errorMessage", ex.getMessage());
@@ -94,18 +94,19 @@ public class AuthController {
     }
 
     private String safeRedirect(String next, User user) {
-        if (next != null && next.startsWith("/") && !next.startsWith("//")) {
+        String dashboard = user.getRole().dashboardPath();
+        if (next != null && next.startsWith("/") && !next.startsWith("//") && !next.equals("/")) {
             if (next.startsWith("/admin") && !user.getRole().isOfficer()) {
-                return "redirect:/";
+                return "redirect:" + dashboard;
             }
             if (next.startsWith("/team") && !user.getRole().isTeamLeader()) {
-                return "redirect:/";
+                return "redirect:" + dashboard;
+            }
+            if (next.startsWith("/my-reports") && !user.getRole().canReport()) {
+                return "redirect:" + dashboard;
             }
             return "redirect:" + next;
         }
-        if (user.getRole().isOfficer()) {
-            return "redirect:/admin";
-        }
-        return user.getRole().isTeamLeader() ? "redirect:/team" : "redirect:/";
+        return "redirect:" + dashboard;
     }
 }

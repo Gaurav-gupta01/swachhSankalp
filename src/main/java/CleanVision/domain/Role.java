@@ -28,6 +28,17 @@ public enum Role {
         return this == CITIZEN;
     }
 
+    /** Landing page for this role — signed-in users always start on their dashboard. */
+    public String dashboardPath() {
+        if (isOfficer()) {
+            return "/admin";
+        }
+        if (isTeamLeader()) {
+            return "/team";
+        }
+        return "/my-reports";
+    }
+
     public static Role fromApi(String value) {
         if (value == null || value.isBlank()) {
             return CITIZEN;

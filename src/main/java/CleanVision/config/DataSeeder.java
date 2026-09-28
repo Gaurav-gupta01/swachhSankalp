@@ -124,7 +124,7 @@ public class DataSeeder implements ApplicationRunner {
             report = reports.save(report);
 
             recordEntry(report, ReportStatus.SUBMITTED, citizen.getName(), "Report submitted by citizen");
-            recordEntry(report, ReportStatus.AI_ANALYZED, "CleanVision AI",
+            recordEntry(report, ReportStatus.AI_ANALYZED, "Swachh Sankalp AI",
                     seed.category().getLabel() + " detected at "
                             + Math.round(report.getConfidence() * 100) + "% confidence");
 

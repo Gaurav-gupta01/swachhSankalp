@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Disposal Facility')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: navbar}"></header>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<main class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h1 class="h3 section-title mb-1"
+                th:text="${editing ? 'Edit Disposal Facility' : 'New Disposal Facility'}">Disposal Facility</h1>
+            <div class="text-muted small"
+                 th:text="${editing ? 'Update facility details used for routing.' : 'Register an authorised facility so cleanup teams can route collected waste to it.'}">
+                Facility details
+            </div>
+        </div>
+        <a th:href="@{/admin/facilities}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Back to facilities
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card-soft p-4">
+                <div class="alert alert-danger" th:if="${errorMessage != null}">
+                    <span th:text="${errorMessage}">Error</span>
+                </div>
+
+                <form th:object="${form}" method="post"
+                      th:action="${editing ? '/admin/facilities/' + facilityId : '/admin/facilities'}">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label">Facility name</label>
+                            <input type="text" class="form-control" th:field="*{name}"
+                                   placeholder="Central Material Recovery Facility" required autofocus>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Facility type</label>
+                            <select class="form-select" th:field="*{facilityType}">
+                                <option th:each="type : ${facilityTypes}" th:value="${type.name()}"
+                                        th:text="${type.label}">Material Recovery Facility</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Latitude</label>
+                            <input type="number" step="any" class="form-control" th:field="*{latitude}"
+                                   placeholder="15.2993" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Longitude</label>
+                            <input type="number" step="any" class="form-control" th:field="*{longitude}"
+                                   placeholder="74.1240" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Ward</label>
+                            <input type="text" class="form-control" th:field="*{ward}" placeholder="Ward 4">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Address</label>
+                            <input type="text" class="form-control" th:field="*{address}"
+                                   placeholder="Plot 12, Industrial Estate">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Capacity / note</label>
+                            <input type="text" class="form-control" th:field="*{capacity}" placeholder="40 TPD">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Contact</label>
+                            <input type="tel" class="form-control" th:field="*{contact}" placeholder="020-4000111">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label mb-2">Accepted waste types</label>
+                            <div class="row row-cols-2 row-cols-md-4 g-2">
+                                <div class="col" th:each="category : ${wasteTypes}">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox"
+                                               th:field="*{acceptedTypes}" th:value="${category.name()}"
+                                               th:id="'cat-' + ${category.name()}">
+                                        <label class="form-check-label" th:for="'cat-' + ${category.name()}"
+                                               th:text="${category.label}">Plastic</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-text">Routing only sends a load here when the facility
+                                accepts that waste category.</div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" th:field="*{operational}"
+                                       id="facilityOperational">
+                                <label class="form-check-label" for="facilityOperational">
+                                    Operational (available for routing)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button class="btn btn-accent" type="submit">
+                            <i class="bi bi-check2 me-1"></i>
+                            <span th:text="${editing ? 'Save changes' : 'Add facility'}">Save</span>
+                        </button>
+                        <a class="btn btn-outline-secondary" th:href="@{/admin/facilities}">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -76,4 +76,29 @@ public class Report {
 
     @Column(name = "resolved_at")
     private LocalDateTime resolvedAt;
+
+    @Column(name = "collected_at")
+    private LocalDateTime collectedAt;
+
+    @Column(name = "quantity_kg")
+    private Double quantityKg;
+
+    @Column(name = "team_latitude")
+    private Double teamLatitude;
+
+    @Column(name = "team_longitude")
+    private Double teamLongitude;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "disposal_facility_id")
+    private DisposalFacility disposalFacility;
+
+    @Column(name = "disposed_at")
+    private LocalDateTime disposedAt;
+
+    @Column(name = "route_distance_m")
+    private Double routeDistanceM;
+
+    @Column(name = "route_duration_s")
+    private Double routeDurationS;
 }

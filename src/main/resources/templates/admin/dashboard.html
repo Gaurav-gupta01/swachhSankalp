@@ -8,39 +8,46 @@
 <main class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
-            <h1 class="h3 section-title mb-1">CleanVision Admin</h1>
+            <h1 class="h3 section-title mb-1">Swachh Sankalp Admin</h1>
             <div class="text-muted small">Municipal waste reporting control centre</div>
         </div>
         <div class="btn-group">
             <a th:href="@{/admin/reports}" class="btn btn-outline-primary btn-sm">All Reports</a>
             <a th:href="@{/admin/analytics}" class="btn btn-outline-primary btn-sm">Analytics</a>
             <a th:href="@{/admin/teams}" class="btn btn-outline-primary btn-sm">Teams</a>
+            <a th:href="@{/admin/facilities}" class="btn btn-outline-primary btn-sm">Facilities</a>
         </div>
     </div>
 
     <div class="row g-3 mb-4">
-        <div class="col-6 col-lg-3">
+        <div class="col-6 col-lg flex-grow-1" style="min-width:150px">
             <div class="stat-card p-3">
                 <div class="value" th:text="${stats.totalReports}">1284</div>
                 <div class="label">Total Reports</div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
+        <div class="col-6 col-lg flex-grow-1" style="min-width:150px">
             <div class="stat-card p-3">
                 <div class="value" th:text="${stats.pending}">126</div>
                 <div class="label">Pending</div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
+        <div class="col-6 col-lg flex-grow-1" style="min-width:150px">
             <div class="stat-card p-3">
                 <div class="value" th:text="${stats.inProgress}">48</div>
                 <div class="label">In Progress</div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
+        <div class="col-6 col-lg flex-grow-1" style="min-width:150px">
             <div class="stat-card p-3">
                 <div class="value" th:text="${stats.resolved}">1110</div>
                 <div class="label">Resolved</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg flex-grow-1" style="min-width:150px">
+            <div class="stat-card p-3">
+                <div class="value" th:text="${stats.disposalPending}">3</div>
+                <div class="label">Disposal Pending</div>
             </div>
         </div>
     </div>

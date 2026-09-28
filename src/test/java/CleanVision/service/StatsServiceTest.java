@@ -53,4 +53,34 @@ class StatsServiceTest {
 
         assertThat(stats.dashboard().totalReports()).isEqualTo(1);
     }
+
+    @Test
+    void collectedReportsCountAsWorkInProgressUntilDisposalIsConfirmed() {
+        Report collected = new Report();
+        collected.setWasteType(WasteCategory.ORGANIC);
+        collected.setSeverity(Severity.LOW);
+        collected.setStatus(ReportStatus.COLLECTED);
+        collected.setConfidence(0.9);
+        collected.setCreatedAt(LocalDateTime.now());
+        collected.setCollectedAt(LocalDateTime.now());
+
+        Report disposed = new Report();
+        disposed.setWasteType(WasteCategory.PLASTIC);
+        disposed.setSeverity(Severity.MEDIUM);
+        disposed.setStatus(ReportStatus.RESOLVED);
+        disposed.setConfidence(0.8);
+        disposed.setCreatedAt(LocalDateTime.now());
+        disposed.setCollectedAt(LocalDateTime.now().minusHours(1));
+        disposed.setDisposedAt(LocalDateTime.now());
+
+        ReportRepository repository = Mockito.mock(ReportRepository.class);
+        when(repository.findAllByOrderByCreatedAtDesc()).thenReturn(List.of(collected, disposed));
+
+        DashboardStatistics stats = new StatsService(repository).dashboard();
+
+        assertThat(stats.totalReports()).isEqualTo(2);
+        assertThat(stats.inProgress()).isEqualTo(1);
+        assertThat(stats.resolved()).isEqualTo(1);
+        assertThat(stats.disposalPending()).isEqualTo(1);
+    }
 }

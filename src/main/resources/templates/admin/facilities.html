@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Disposal Facilities')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: navbar}"></header>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<main class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h1 class="h3 section-title mb-1">Disposal Facilities</h1>
+            <div class="text-muted small">Authorised facilities used for smart disposal routing of
+                collected waste.</div>
+        </div>
+        <div class="d-flex gap-2">
+            <a th:href="@{/admin/facilities/new}" class="btn btn-accent btn-sm">
+                <i class="bi bi-plus-lg me-1"></i>New Facility
+            </a>
+            <a th:href="@{/admin}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-speedometer2 me-1"></i>Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="card-soft p-0 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th>Facility</th>
+                    <th>Type</th>
+                    <th>Accepts</th>
+                    <th>Location</th>
+                    <th>Reported loads</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="facility : ${facilities}">
+                    <td>
+                        <div class="fw-semibold" th:text="${facility.name}">MRF A</div>
+                        <div class="small text-muted" th:text="${facility.address != null ? facility.address : '-'}">Address</div>
+                    </td>
+                    <td class="small" th:text="${facility.facilityType.label}">MRF</td>
+                    <td>
+                        <span class="badge text-bg-light border me-1 mb-1"
+                              th:each="category : ${facility.getAcceptedCategories()}"
+                              th:text="${category.label}">Plastic</span>
+                    </td>
+                    <td class="small">
+                        <span th:text="${#numbers.formatDecimal(facility.latitude, 1, 5)} + ', ' + ${#numbers.formatDecimal(facility.longitude, 1, 5)}">Coords</span>
+                        <div class="text-muted" th:text="${facility.ward != null ? facility.ward : ''}">Ward</div>
+                    </td>
+                    <td>
+                        <span class="badge text-bg-secondary" th:text="${reportCount[facility.id]}">0</span>
+                    </td>
+                    <td>
+                        <span class="badge"
+                              th:classappend="${facility.operational ? 'text-bg-success' : 'text-bg-secondary'}"
+                              th:text="${facility.operational ? 'Operational' : 'Closed'}">Operational</span>
+                    </td>
+                    <td class="text-end text-nowrap">
+                        <a class="btn btn-sm btn-outline-primary"
+                           th:href="@{/admin/facilities/{id}/edit(id=${facility.id})}">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <form th:action="@{/admin/facilities/{id}/delete(id=${facility.id})}" method="post"
+                              class="d-inline"
+                              onsubmit="return confirm('Delete this facility?');">
+                            <button class="btn btn-sm btn-outline-danger" type="submit">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(facilities)}">
+                    <td colspan="7" class="text-center text-muted py-4">No facilities registered yet.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

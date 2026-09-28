@@ -41,10 +41,15 @@ public class StatsService {
     private DashboardStatistics build(List<Report> all) {
         long pending = all.stream().filter(r -> r.getStatus().ordinal() < ReportStatus.ASSIGNED.ordinal()).count();
         long inProgress = all.stream()
-                .filter(r -> r.getStatus() == ReportStatus.ASSIGNED || r.getStatus() == ReportStatus.IN_PROGRESS)
+                .filter(r -> r.getStatus() == ReportStatus.ASSIGNED
+                        || r.getStatus() == ReportStatus.IN_PROGRESS
+                        || r.getStatus() == ReportStatus.COLLECTED)
                 .count();
         long resolved = all.stream()
                 .filter(r -> r.getStatus() == ReportStatus.RESOLVED || r.getStatus() == ReportStatus.CLOSED)
+                .count();
+        long disposalPending = all.stream()
+                .filter(r -> r.getDisposedAt() == null && r.getCollectedAt() != null)
                 .count();
 
         double averageConfidence = all.isEmpty() ? 0
@@ -83,6 +88,7 @@ public class StatsService {
                 pending,
                 inProgress,
                 resolved,
+                disposalPending,
                 Math.round(averageConfidence * 1000) / 10.0,
                 byCategory,
                 bySeverity,
@@ -178,6 +184,25 @@ public class StatsService {
         map.put("address", report.getAddress() == null ? "-" : report.getAddress());
         map.put("imageUrl", report.getImageUrl());
         map.put("createdAt", report.getCreatedAt());
+        map.put("disposal", disposalLabel(report));
+        map.put("disposalCode", disposalCode(report));
+        map.put("facilityType", report.getDisposalFacility() == null ? ""
+                : report.getDisposalFacility().getFacilityType().getLabel());
+        map.put("quantityKg", report.getQuantityKg());
         return map;
+    }
+
+    private String disposalLabel(Report report) {
+        if (report.getDisposalFacility() != null) {
+            return report.getDisposalFacility().getName();
+        }
+        return report.getCollectedAt() != null ? "Disposal pending" : "—";
+    }
+
+    private String disposalCode(Report report) {
+        if (report.getDisposalFacility() != null) {
+            return "DONE";
+        }
+        return report.getCollectedAt() != null ? "PENDING" : "NA";
     }
 }

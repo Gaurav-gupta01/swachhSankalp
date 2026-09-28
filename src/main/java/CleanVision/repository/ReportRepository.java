@@ -34,4 +34,7 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     List<Report> findByLatitudeIsNotNullAndLongitudeIsNotNull();
 
     List<Report> findByCreatedAtAfter(java.time.LocalDateTime after);
+
+    Optional<Report> findFirstByAfterImageUrlIsNotNullOrderByCreatedAtDesc();
+    long countByDisposalFacilityId(Long facilityId);
 }

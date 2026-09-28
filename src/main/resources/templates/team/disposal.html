@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${'Disposal routing · ' + report.publicId})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: navbar}"></header>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<main class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h1 class="h3 section-title mb-1">Smart Disposal Routing</h1>
+            <div class="text-muted small">
+                Report <span th:text="${report.publicId}">CV10001</span>
+                · <span th:text="${report.wasteType.icon} + ' ' + ${report.wasteType.label}">Plastic</span>
+                <span th:if="${report.quantityKg != null}"
+                      th:text="' · ' + ${report.quantityKg} + ' kg collected'"> · 12 kg collected</span>
+                · collected <span th:text="${#temporals.format(report.collectedAt, 'dd MMM yyyy, HH:mm')}">now</span>
+            </div>
+        </div>
+        <a th:href="@{'/team/reports/' + ${report.publicId}}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Back to report
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="routing-banner mb-3"
+                 th:classappend="${routingAvailable} ? 'ok' : 'warn'">
+                <i class="bi" th:classappend="${routingAvailable} ? 'bi-diagram-3-fill' : 'bi-exclamation-triangle-fill'"></i>
+                <div>
+                    <div class="fw-semibold mb-1"
+                         th:text="${routingAvailable} ? 'Live routes from OSRM' : 'Routing unavailable'">Live routes</div>
+                    <div th:text="${routingMessage}">Message</div>
+                </div>
+            </div>
+
+            <div class="mb-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h2 class="h6 text-uppercase text-muted mb-0">Suitable facilities near you</h2>
+                <span class="small text-muted"
+                      th:text="'Waste compatibility · facility availability · route time'">Ranking</span>
+            </div>
+
+            <div class="facility-list" th:if="${not #lists.isEmpty(suggestions)}">
+                <article class="facility-card" th:classappend="${not s.operational} ? 'is-offline'"
+                         th:each="s, it : ${suggestions}">
+                    <div class="facility-rank" th:text="${it.count}">1</div>
+                    <div class="facility-main">
+                        <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
+                            <div class="min-w-0">
+                                <div class="fw-semibold" th:text="${s.name}">Material Recovery Facility</div>
+                                <div class="small text-muted"
+                                     th:text="${s.facilityType + (s.address != null and !s.address.isEmpty()
+                                         ? ' · ' + s.address : '')}">MRF</div>
+                            </div>
+                            <span class="match-pill" th:classappend="${s.score < 70} ? 'warn'"
+                                  th:text="'Match ' + ${s.score} + '%'">Match 92%</span>
+                        </div>
+
+                        <div class="facility-metrics">
+                            <span class="metric-chip">
+                                <i class="bi bi-signpost-split"></i><span th:text="${s.distanceLabel}">3.2 km</span>
+                            </span>
+                            <span class="metric-chip">
+                                <i class="bi bi-clock"></i><span th:text="${s.durationLabel}">12 min</span>
+                            </span>
+                            <span class="metric-chip" th:if="${not s.operational}">
+                                <i class="bi bi-slash-circle"></i>Temporarily closed
+                            </span>
+                        </div>
+
+                        <div class="small text-muted mt-2">
+                            Accepts:
+                            <span th:each="accepted, i : ${s.acceptedLabels}"
+                                  th:text="${i.index > 0 ? ', ' : ''} + ${accepted}">Plastic</span>
+                        </div>
+                    </div>
+
+                    <div class="facility-actions">
+                        <a class="btn btn-outline-success btn-sm" th:href="${s.navigateUrl}" target="_blank"
+                           rel="noopener">
+                            <i class="bi bi-signpost me-1"></i>Navigate
+                        </a>
+                        <form th:action="@{'/team/reports/' + ${report.publicId} + '/disposal'}" method="post">
+                            <input type="hidden" name="facilityId" th:value="${s.id}">
+                            <button class="btn btn-success btn-sm" type="submit"
+                                    th:disabled="${not s.operational}">
+                                <i class="bi bi-check2-circle me-1"></i>Confirm disposal
+                            </button>
+                        </form>
+                    </div>
+                </article>
+            </div>
+
+            <div class="card-soft p-4" th:if="${#lists.isEmpty(suggestions)}">
+                <div class="d-flex align-items-start gap-2">
+                    <i class="bi bi-exclamation-circle text-warning fs-5"></i>
+                    <div>
+                        <div class="fw-semibold mb-1">No matching facility found</div>
+                        <div class="small text-muted" th:text="${routingMessage}">Message</div>
+                        <div class="small text-muted mt-2">Contact the control room — an officer can
+                            approve an out-of-radius facility for this load.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card-soft p-4 mb-4">
+                <h2 class="h6 text-uppercase text-muted mb-3">Route overview</h2>
+                <div id="disposalMap" class="map-box mb-3"></div>
+                <div class="small text-muted mb-2">
+                    <i class="bi bi-circle text-success me-1"></i>Your collected load
+                    <span class="mx-2">·</span>
+                    <i class="bi bi-geo-alt-fill text-primary me-1"></i>Authorised facilities
+                </div>
+                <div class="small text-muted">
+                    Distances and travel times come from the live OSRM routing service using your
+                    recorded collection point.
+                </div>
+            </div>
+
+            <div class="card-soft p-4">
+                <h2 class="h6 text-uppercase text-muted mb-3">Collected load</h2>
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="text-muted small">Report</div>
+                        <div class="fw-semibold" th:text="${report.publicId}">CV10001</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted small">Quantity</div>
+                        <div class="fw-semibold"
+                             th:text="${report.quantityKg != null ? report.quantityKg + ' kg' : 'Not recorded'}">12 kg</div>
+                    </div>
+                    <div class="col-12">
+                        <div class="text-muted small">Collection point</div>
+                        <div class="fw-semibold geo-readout"
+                             th:text="${#numbers.formatDecimal(originLat, 1, 5)} + ', ' + ${#numbers.formatDecimal(originLng, 1, 5)}">Coords</div>
+                    </div>
+                    <div class="col-12">
+                        <div class="text-muted small">Site</div>
+                        <div class="small" th:text="${report.address != null ? report.address : 'No address shared'}">Address</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:inline="javascript">
+    var originPoint = /*[[${originPoint}]]*/ null;
+    var facilityPoints = /*[[${facilityPoints}]]*/ [];
+</script>
+<script th:src="@{/vendor/leaflet/leaflet.js}"></script>
+<script th:src="@{/js/disposal-map.js}"></script>
+</body>
+</html>

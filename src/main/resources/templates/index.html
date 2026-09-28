@@ -1,170 +1,423 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Report Waste')}"></head>
-<body>
+<head th:replace="~{fragments/layout :: head('Home')}"></head>
+<body class="cv-body-home">
+<script>document.documentElement.classList.add('cv-anim');</script>
 <header th:replace="~{fragments/layout :: navbar}"></header>
 <div th:replace="~{fragments/layout :: flash}"></div>
 
-<main class="container py-4">
-    <section class="hero mb-4">
-        <div class="row align-items-center g-4">
-            <div class="col-lg-7">
-                <span class="badge text-bg-light mb-3">Environment / Smart City / AI</span>
-                <h1 class="display-6 mb-3">See waste? Report it in seconds.</h1>
-                <p class="lead mb-4 opacity-90">
-                    Take one photograph. CleanVision AI identifies the waste, estimates severity and
-                    location, and converts it into an actionable municipal complaint.
-                </p>
-                <a th:href="@{/report/new}" class="btn btn-accent btn-lg me-2"
-                   th:if="${currentUser == null or currentUser.role.canReport()}">
-                    <i class="bi bi-camera-fill me-2"></i>Report Waste
-                </a>
-                <a th:href="@{/my-reports}" class="btn btn-outline-light btn-lg me-2"
-                   th:if="${currentUser != null and currentUser.role.canReport()}">
-                    <i class="bi bi-journal-check me-2"></i>Track My Reports
-                </a>
-                <a th:href="@{/admin}" class="btn btn-outline-light btn-lg"
-                   th:if="${currentUser != null and currentUser.role.isOfficer()}">
-                    <i class="bi bi-speedometer2 me-2"></i>Open Municipal Dashboard
-                </a>
-            </div>
-            <div class="col-lg-5">
-                <div class="row g-3">
-                    <div class="col-6">
-                        <div class="stat-card p-3 h-100">
-                            <div class="value" th:text="${stats.totalReports}">0</div>
-                            <div class="label" th:text="${scopeMine ? 'My Reports' : 'Total Reports'}">Total Reports</div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="stat-card p-3 h-100">
-                            <div class="value" th:text="${stats.pending}">0</div>
-                            <div class="label" th:text="${scopeMine ? 'Awaiting Action' : 'Pending'}">Pending</div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="stat-card p-3 h-100">
-                            <div class="value" th:text="${stats.inProgress}">0</div>
-                            <div class="label">In Progress</div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="stat-card p-3 h-100">
-                            <div class="value" th:text="${stats.resolved}">0</div>
-                            <div class="label">Resolved</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+<main class="cv-home">
 
-    <section class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="card-soft p-3 h-100">
-                <span class="step-dot active mb-2">1</span>
-                <div class="fw-semibold">Upload photo</div>
-                <div class="text-muted small">Take or choose a picture of the waste</div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card-soft p-3 h-100">
-                <span class="step-dot mb-2">2</span>
-                <div class="fw-semibold">AI analysis</div>
-                <div class="text-muted small">Type, confidence and severity detected</div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card-soft p-3 h-100">
-                <span class="step-dot mb-2">3</span>
-                <div class="fw-semibold">Confirm location</div>
-                <div class="text-muted small">GPS coordinates or address with ward</div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card-soft p-3 h-100">
-                <span class="step-dot mb-2">4</span>
-                <div class="fw-semibold">Municipal action</div>
-                <div class="text-muted small">Assigned, cleaned and verified</div>
-            </div>
-        </div>
-    </section>
+    <!-- 1 · HERO -->
+    <section class="cv-hero">
+        <div class="container">
+            <div class="cv-hero-grid">
+                <div class="cv-hero-copy">
+                    <span class="cv-eyebrow">AI &middot; Environment &middot; Municipal Action</span>
+                    <h1>Turn a Waste Problem <span class="cv-hl">Into an Action.</span></h1>
+                    <p class="cv-lead">
+                        Use AI to identify waste, report illegal dumping, and help municipal teams respond faster.
+                    </p>
 
-    <section class="row g-4">
-        <div class="col-lg-7">
-            <div class="card-soft p-4 h-100">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2 class="h5 section-title mb-0"
-                        th:text="${scopeMine ? 'My recent reports' : 'Latest citizen reports'}">Latest citizen reports</h2>
-                    <a th:href="@{/admin/reports}" class="small"
-                       th:if="${currentUser != null and currentUser.role.isOfficer()}">View all</a>
+                    <div class="cv-actions">
+                        <a class="btn btn-green btn-lg" th:href="@{/report/new}"
+                           th:if="${currentUser == null or currentUser.role.canReport()}">
+                            <i class="bi bi-camera-fill"></i> Report Waste
+                        </a>
+                        <a class="btn btn-green btn-lg" th:href="@{/admin}"
+                           th:if="${currentUser != null and currentUser.role.isOfficer()}">
+                            <i class="bi bi-speedometer2"></i> Open Municipal Dashboard
+                        </a>
+                        <a class="btn btn-line btn-lg" href="#how-it-works">
+                            <i class="bi bi-play-fill"></i> See How It Works
+                        </a>
+                    </div>
+
+                    <ul class="cv-chips">
+                        <li><span>🤖</span> AI Powered</li>
+                        <li><span>📍</span> Location Aware</li>
+                        <li><span>🏛️</span> Civic Action</li>
+                    </ul>
                 </div>
 
-                <div class="empty-state" th:if="${#lists.isEmpty(stats.recentReports)}"
-                     th:text="${scopeMine
-                         ? 'You have not reported anything yet. Take a photo and CleanVision AI will do the rest.'
-                         : 'No reports yet. Be the first to photograph waste in your area.'}">
-                    No reports yet. Be the first to photograph waste in your area.
-                </div>
-
-                <div class="list-group list-group-flush" th:if="${!#lists.isEmpty(stats.recentReports)}">
-                    <div class="list-group-item px-0 d-flex gap-3 align-items-center"
-                         th:each="r : ${stats.recentReports}">
-                        <img th:src="@{'/uploads/' + ${r.imageUrl}}" alt="" class="rounded"
-                             style="width:64px;height:64px;object-fit:cover;background:#10201a">
-                        <div class="flex-grow-1">
-                            <div class="fw-semibold">
-                                <span th:text="${r.icon}">🗑️</span>
-                                <span th:text="${r.wasteType}">Plastic</span>
-                                <span class="text-muted small fw-normal" th:text="'· ' + ${r.ward}">Ward</span>
+                <div class="cv-hero-visual">
+                    <div class="cv-shot-card"
+                         th:with="latest=${#lists.isEmpty(stats.recentReports) ? null : stats.recentReports[0]}">
+                        <div class="cv-shot-frame">
+                            <img th:if="${latest != null}" th:src="@{'/uploads/' + ${latest.imageUrl}}"
+                                 alt="Photograph of reported waste">
+                            <div class="cv-shot-art" th:if="${latest == null}">
+                                <span class="cv-art-big">📸</span>
+                                <span class="cv-art-waste">🗑️</span>
+                                <span class="cv-art-note">Point &middot; Capture &middot; Report</span>
                             </div>
-                            <div class="small text-muted" th:text="${r.publicId} + ' · ' + ${r.address}">Report</div>
+                            <span class="cv-corner cv-tl"></span>
+                            <span class="cv-corner cv-tr"></span>
+                            <span class="cv-corner cv-bl"></span>
+                            <span class="cv-corner cv-br"></span>
+                            <span class="cv-scan"></span>
+                            <span class="cv-shot-pill"><span class="cv-live-dot"></span> LIVE CAPTURE</span>
                         </div>
-                        <div class="text-end">
-                            <span class="badge-status badge st-submitted"
-                                  th:classappend="'st-' + ${#strings.toLowerCase(r.statusCode)}"
-                                  th:text="${r.status}">Pending</span>
-                            <div class="small text-muted mt-1" th:text="${r.severity}">High</div>
-                        </div>
+
+                        <aside class="cv-ai-card">
+                            <div class="cv-ai-title"><span class="cv-ai-dot"></span> AI ANALYSIS</div>
+                            <div class="cv-ai-thumb" th:if="${latest != null}">
+                                <img th:src="@{'/uploads/' + ${latest.imageUrl}}" alt="">
+                            </div>
+                            <div class="cv-ai-thumb cv-ai-thumb-alt" th:if="${latest == null}">🧴 🛍️ 🥤</div>
+                            <div class="cv-ai-line">
+                                <span>Waste type</span>
+                                <strong th:text="${latest != null ? latest.icon + ' ' + latest.wasteType : '🧴 Plastic Waste'}">🧴 Plastic Waste</strong>
+                            </div>
+                            <div class="cv-ai-line">
+                                <span>Confidence</span>
+                                <strong th:text="${stats.averageConfidence + '%'}">94%</strong>
+                            </div>
+                            <div class="cv-ai-line">
+                                <span>Priority</span>
+                                <em class="cv-pill" th:classappend="'sev-' + ${latest != null ? latest.severityCode : 'HIGH'}"
+                                    th:text="${latest != null ? latest.severity : 'High'}">High</em>
+                            </div>
+                            <div class="cv-ai-ready"><i class="bi bi-check-circle-fill"></i> Report Ready</div>
+                        </aside>
                     </div>
                 </div>
             </div>
         </div>
+    </section>
 
-        <div class="col-lg-5">
-            <div class="card-soft p-4 h-100">
-                <h2 class="h5 section-title mb-3"
-                    th:text="${scopeMine ? 'My waste by category' : 'Waste by category'}">Waste by category</h2>
-                <div class="empty-state py-4" th:if="${stats.byCategory.isEmpty()}"
-                     th:text="${scopeMine ? 'Nothing reported yet.' : 'No data yet.'}">No data yet.</div>
-                <div th:each="entry : ${stats.byCategory}">
-                    <div class="bar-row">
-                        <span class="bar-label" th:text="${entry.key}">Plastic</span>
-                        <span class="bar-track">
-                            <span class="bar-fill" style="display:block"
-                                  th:style="'width:' + ${entry.value * 100 / (stats.totalReports == 0 ? 1 : stats.totalReports)} + '%'"></span>
-                        </span>
-                        <span class="bar-value" th:text="${entry.value}">0</span>
+    <!-- 2 · THE JOURNEY -->
+    <section class="cv-journey-wrap">
+        <div class="container">
+            <ol class="cv-journey">
+                <li><span class="cv-j-ico">📷</span><span class="cv-j-txt"><strong>Take Photo</strong><small>Citizen spots waste</small></span></li>
+                <li><span class="cv-j-ico">🤖</span><span class="cv-j-txt"><strong>AI Detects</strong><small>Type &amp; priority</small></span></li>
+                <li><span class="cv-j-ico">📍</span><span class="cv-j-txt"><strong>Location</strong><small>Ward &amp; GPS</small></span></li>
+                <li><span class="cv-j-ico">🏛️</span><span class="cv-j-txt"><strong>Municipality</strong><small>Report queued</small></span></li>
+                <li><span class="cv-j-ico">🚛</span><span class="cv-j-txt"><strong>Cleanup</strong><small>Team assigned</small></span></li>
+                <li><span class="cv-j-ico">✅</span><span class="cv-j-txt"><strong>Resolved</strong><small>Verified close</small></span></li>
+            </ol>
+        </div>
+    </section>
+
+    <!-- 3 · REPORT IN 3 STEPS -->
+    <section class="cv-section" id="how-it-works">
+        <div class="container">
+            <div class="cv-sec-head cv-reveal">
+                <span class="cv-eyebrow">How it works</span>
+                <h2>See waste? Report it in 3 steps.</h2>
+                <p>One photograph is all it takes — the rest is classification, routing and cleanup.</p>
+            </div>
+
+            <div class="cv-steps cv-reveal">
+                <article class="cv-step">
+                    <span class="cv-step-no">01</span>
+                    <span class="cv-step-ico">📷</span>
+                    <h3>Capture</h3>
+                    <p>Take a photo of the waste.</p>
+                </article>
+                <span class="cv-step-arrow"><i class="bi bi-arrow-right"></i></span>
+                <article class="cv-step">
+                    <span class="cv-step-no">02</span>
+                    <span class="cv-step-ico">🤖</span>
+                    <h3>Analyze</h3>
+                    <p>Our AI identifies the waste type and priority.</p>
+                </article>
+                <span class="cv-step-arrow"><i class="bi bi-arrow-right"></i></span>
+                <article class="cv-step">
+                    <span class="cv-step-no">03</span>
+                    <span class="cv-step-ico">📍</span>
+                    <h3>Report</h3>
+                    <p>Send the report to the appropriate municipal team.</p>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4 · AI DEMONSTRATION -->
+    <section class="cv-section cv-soft" id="ai-demo">
+        <div class="container">
+            <div class="cv-sec-head cv-reveal">
+                <span class="cv-eyebrow">AI classification</span>
+                <h2>AI That Understands Waste</h2>
+                <p>Every image is classified, scored and turned into a structured municipal report.</p>
+            </div>
+
+            <div class="cv-ai-demo cv-reveal"
+                 th:with="latest=${#lists.isEmpty(stats.recentReports) ? null : stats.recentReports[0]}">
+                <div class="cv-demo-shot">
+                    <div class="cv-demo-label">WASTE IMAGE</div>
+                    <div class="cv-demo-img">
+                        <img th:if="${latest != null}" th:src="@{'/uploads/' + ${latest.imageUrl}}"
+                             alt="Waste sample for AI classification">
+                        <div class="cv-shot-art" th:if="${latest == null}">
+                            <span class="cv-art-big">🗑️</span>
+                        </div>
+                        <div class="cv-demo-icons">🧴 🛍️ 🥤</div>
+                        <span class="cv-scan"></span>
                     </div>
                 </div>
 
-                <div class="mt-4 pt-3 border-top d-flex gap-3 small text-muted">
-                    <div><i class="bi bi-robot me-1"></i>Avg confidence
-                        <strong th:text="${stats.averageConfidence} + '%'">0%</strong></div>
-                    <div><i class="bi bi-check2-circle me-1"></i>Resolved
-                        <strong th:text="${stats.totalReports == 0 ? 0 : stats.resolved * 100 / stats.totalReports} + '%'">0%</strong>
-                    </div>
+                <div class="cv-demo-arrow">
+                    <span class="cv-demo-arrow-icon"><i class="bi bi-arrow-down"></i></span>
+                    <span class="cv-demo-arrow-label">AI</span>
                 </div>
 
-                <div class="mt-3" th:if="${currentUser != null and currentUser.role.isOfficer()}">
-                    <a th:href="@{/admin/analytics}" class="btn btn-sm btn-outline-primary">Open full analytics</a>
+                <div class="cv-demo-out">
+                    <div class="cv-demo-out-title">AI Classification</div>
+                    <div class="cv-out-row"><span>Waste Type</span>
+                        <strong th:text="${latest != null ? latest.wasteType : 'Plastic'}">Plastic</strong></div>
+                    <div class="cv-out-row"><span>Confidence</span>
+                        <strong th:text="${stats.averageConfidence + '%'}">94%</strong></div>
+                    <div class="cv-out-row"><span>Severity</span>
+                        <strong class="cv-out-sev" th:text="${latest != null ? latest.severity : 'High'}">HIGH</strong></div>
+                    <div class="cv-out-row"><span>Location</span>
+                        <strong th:text="${latest != null and latest.ward != null ? latest.ward : 'Ward 5'}">Ward 5</strong></div>
+
+                    <div class="cv-out-stage">
+                        <div class="cv-stage-track"><span id="cvAiBar" style="width:15%"></span></div>
+                        <div class="cv-stage-text"><span class="cv-stage-dot"></span><span id="cvAiStage">Analyzing</span></div>
+                    </div>
+
+                    <div class="cv-out-ready"><i class="bi bi-check2-circle"></i> Report Generated</div>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5 · IMPACT -->
+    <section class="cv-section cv-impact" id="impact">
+        <div class="container">
+            <div class="cv-sec-head light cv-reveal">
+                <span class="cv-eyebrow">Our impact</span>
+                <h2>Citizen reports, measured.</h2>
+                <span class="cv-demo-badge">Live demo data &middot; updates from the project database</span>
+            </div>
+
+            <div class="cv-stats cv-reveal">
+                <div class="cv-stat">
+                    <div class="cv-stat-value" th:text="${stats.totalReports}">1,284</div>
+                    <div class="cv-stat-label">Reports Submitted</div>
+                </div>
+                <div class="cv-stat">
+                    <div class="cv-stat-value" th:text="${stats.resolved}">1,102</div>
+                    <div class="cv-stat-label">Waste Resolved</div>
+                </div>
+                <div class="cv-stat">
+                    <div class="cv-stat-value"
+                         th:text="${stats.totalReports == 0 ? '0%' : (stats.resolved * 100 / stats.totalReports) + '%'}">86%</div>
+                    <div class="cv-stat-label">Reports Resolved</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 6 · WASTE CATEGORIES -->
+    <section class="cv-section" id="detect">
+        <div class="container">
+            <div class="cv-sec-head cv-reveal">
+                <span class="cv-eyebrow">Recognition</span>
+                <h2>What Can AI Detect?</h2>
+                <p>The classifier is trained across everyday municipal waste categories.</p>
+            </div>
+
+            <div class="cv-cats cv-reveal">
+                <div class="cv-cat"><span>🧴</span><strong>Plastic</strong></div>
+                <div class="cv-cat"><span>📦</span><strong>Paper</strong></div>
+                <div class="cv-cat"><span>🍌</span><strong>Organic</strong></div>
+                <div class="cv-cat"><span>🔋</span><strong>E-Waste</strong></div>
+                <div class="cv-cat"><span>🍾</span><strong>Glass</strong></div>
+                <div class="cv-cat"><span>🥫</span><strong>Metal</strong></div>
+                <div class="cv-cat"><span>🧱</span><strong>Building</strong></div>
+                <div class="cv-cat"><span>🗑️</span><strong>Mixed</strong></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 7 · MAP / MUNICIPAL -->
+    <section class="cv-section cv-soft" id="municipal">
+        <div class="container">
+            <div class="cv-sec-head cv-reveal">
+                <span class="cv-eyebrow">Municipal deployment</span>
+                <h2>From Citizen Reports to Municipal Action</h2>
+                <p>A shared map turns scattered complaints into one prioritised cleanup queue.</p>
+            </div>
+
+            <div class="cv-map-grid cv-reveal">
+                <div class="cv-map-card">
+                    <div class="cv-map-head">
+                        <span><i class="bi bi-geo-alt-fill"></i> WASTE REPORT MAP</span>
+                        <span class="cv-map-live">LIVE</span>
+                    </div>
+                    <div id="map" class="map-box cv-map-box"></div>
+                </div>
+
+                <div class="cv-map-side">
+                    <div class="cv-legend">
+                        <div class="cv-legend-row"><span class="cv-dot dot-high"></span>
+                            <span>High Priority</span><strong th:text="${stats.bySeverity['High']}">12</strong></div>
+                        <div class="cv-legend-row"><span class="cv-dot dot-med"></span>
+                            <span>Medium Priority</span><strong th:text="${stats.bySeverity['Medium']}">28</strong></div>
+                        <div class="cv-legend-row"><span class="cv-dot dot-ok"></span>
+                            <span>Resolved</span><strong th:text="${stats.resolved}">45</strong></div>
+                    </div>
+
+                    <p class="cv-map-copy">
+                        Municipal teams can visualize waste reports, prioritize high-risk locations,
+                        assign cleanup teams, and track resolution.
+                    </p>
+
+                    <ul class="cv-map-points">
+                        <li><i class="bi bi-check2"></i> Ward level hotspot view</li>
+                        <li><i class="bi bi-check2"></i> Priority based team assignment</li>
+                        <li><i class="bi bi-check2"></i> Resolution tracked per report</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 8 · BEFORE & AFTER -->
+    <section class="cv-section" id="difference">
+        <div class="container">
+            <div class="cv-sec-head cv-reveal">
+                <span class="cv-eyebrow">Closed loop</span>
+                <h2>See the Difference</h2>
+                <p>The report does not end at detection — cleanup is photographed and verified.</p>
+            </div>
+
+            <div class="cv-compare cv-reveal">
+                <figure class="cv-compare-card before">
+                    <figcaption><span>BEFORE</span><em>Reported</em></figcaption>
+                    <div class="cv-compare-media">
+                        <img th:if="${beforeImage != null}" th:src="@{'/uploads/' + ${beforeImage}}"
+                             alt="Waste before cleanup">
+                        <div class="cv-compare-art" th:if="${beforeImage == null}">
+                            <span class="cv-art-big">🗑️</span>
+                            <span>Garbage pile</span>
+                        </div>
+                    </div>
+                </figure>
+
+                <div class="cv-compare-arrow"><i class="bi bi-arrow-right"></i></div>
+
+                <figure class="cv-compare-card after">
+                    <figcaption><span>AFTER</span><em>Resolved</em></figcaption>
+                    <div class="cv-compare-media">
+                        <img th:if="${afterImage != null}" th:src="@{'/uploads/' + ${afterImage}}"
+                             alt="Area after cleanup">
+                        <div class="cv-compare-art clean" th:if="${afterImage == null}">
+                            <span class="cv-art-big">✨</span>
+                            <span>Clean area</span>
+                        </div>
+                    </div>
+                    <div class="cv-compare-done"><i class="bi bi-check-circle-fill"></i> Cleanup completed</div>
+                </figure>
+            </div>
+        </div>
+    </section>
+
+    <!-- 9 · MUNICIPAL DASHBOARD PREVIEW -->
+    <section class="cv-section cv-soft" id="dashboard">
+        <div class="container">
+            <div class="cv-sec-head cv-reveal">
+                <span class="cv-eyebrow">For municipal officers</span>
+                <h2>Municipal Dashboard</h2>
+                <p>Every report, ward and cleanup team in one control centre.</p>
+            </div>
+
+            <div class="cv-dash cv-reveal">
+                <div class="cv-dash-bar">
+                    <span class="cv-dash-title"><i class="bi bi-speedometer2"></i> MUNICIPAL DASHBOARD</span>
+                    <span class="cv-dash-live"><span class="cv-live-dot"></span> LIVE</span>
+                </div>
+                <div class="cv-dash-body">
+                    <div class="cv-dash-kpis">
+                        <div><strong th:text="${stats.totalReports}">1,284</strong><span>Reports</span></div>
+                        <div><strong th:text="${stats.pending}">126</strong><span>Pending</span></div>
+                        <div><strong th:text="${stats.resolved}">1,102</strong><span>Resolved</span></div>
+                    </div>
+                    <div class="cv-dash-map">
+                        <div class="cv-dash-map-label">WASTE HOTSPOT MAP</div>
+                        <span class="cv-hot h1" style="left:26%;top:34%"></span>
+                        <span class="cv-hot h2" style="left:58%;top:26%"></span>
+                        <span class="cv-hot h3" style="left:44%;top:52%"></span>
+                        <span class="cv-hot h2" style="left:74%;top:62%"></span>
+                        <span class="cv-hot h3" style="left:20%;top:70%"></span>
+                        <span class="cv-hot h1" style="left:66%;top:76%"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cv-dash-cta cv-reveal"
+                 th:if="${currentUser == null or currentUser.role.isOfficer()}">
+                <a class="btn btn-green btn-lg" th:href="@{/admin}">View Municipal Dashboard <i class="bi bi-arrow-right"></i></a>
+            </div>
+        </div>
+    </section>
+
+    <!-- 10 · FINAL CTA + ABOUT -->
+    <section class="cv-cta" id="about">
+        <div class="container">
+            <div class="cv-cta-inner cv-reveal">
+                <span class="cv-eyebrow">About Swachh Sankalp AI</span>
+                <h2>Together, We Can Keep Our Cities Clean.</h2>
+                <p class="cv-cta-about">
+                    Swachh Sankalp AI connects citizens, artificial intelligence and municipal teams:
+                    one photograph becomes an analysed, located, assigned and verified cleanup task.
+                </p>
+                <p class="cv-cta-sub">Spot waste? Don't just walk past it.</p>
+                <a class="btn btn-green btn-lg" th:href="@{/report/new}"
+                   th:if="${currentUser == null or currentUser.role.canReport()}">
+                    <i class="bi bi-camera-fill"></i> Report Waste Now
+                </a>
+                <a class="btn btn-line btn-lg" th:href="@{/admin}"
+                   th:if="${currentUser != null and currentUser.role.isOfficer()}">
+                    <i class="bi bi-speedometer2"></i> Open Municipal Dashboard
+                </a>
             </div>
         </div>
     </section>
 </main>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:inline="javascript">
+    var geoPoints = /*[[${geoPoints}]]*/ [];
+</script>
+<script th:src="@{/vendor/leaflet/leaflet.js}"></script>
+<script th:src="@{/js/map.js}"></script>
+<script th:inline="none">
+    (function () {
+        var stage = document.getElementById('cvAiStage');
+        var bar = document.getElementById('cvAiBar');
+        if (stage && bar) {
+            var steps = [['Analyzing', 15], ['Detecting', 45], ['Classifying', 75], ['Report Ready', 100]];
+            var i = 0;
+            setInterval(function () {
+                i = (i + 1) % steps.length;
+                stage.textContent = steps[i][0];
+                stage.classList.toggle('is-done', steps[i][0] === 'Report Ready');
+                bar.style.width = steps[i][1] + '%';
+            }, 1500);
+        }
+
+        var targets = document.querySelectorAll('.cv-reveal');
+        if (!('IntersectionObserver' in window)) {
+            Array.prototype.forEach.call(targets, function (el) { el.classList.add('cv-in'); });
+            return;
+        }
+        var io = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('cv-in');
+                    io.unobserve(entry.target);
+                }
+            });
+        }, {threshold: 0.12});
+        Array.prototype.forEach.call(targets, function (el) { io.observe(el); });
+    })();
+</script>
 </body>
 </html>

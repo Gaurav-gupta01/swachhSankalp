@@ -164,6 +164,7 @@ public final class Forms {
             long pending,
             long inProgress,
             long resolved,
+            long disposalPending,
             double averageConfidence,
             Map<String, Long> byCategory,
             Map<String, Long> bySeverity,
@@ -171,6 +172,55 @@ public final class Forms {
             List<Map<String, Object>> recentReports,
             List<Map<String, Object>> hotspots,
             List<Map<String, Object>> reportsOverTime) {
+    }
+
+    @Data
+    public static class FacilityForm {
+
+        @NotBlank(message = "Facility name is required")
+        @Size(max = 120)
+        private String name;
+
+        @NotBlank(message = "Facility type is required")
+        private String facilityType;
+
+        private double latitude;
+
+        private double longitude;
+
+        @Size(max = 255)
+        private String address;
+
+        @Size(max = 60)
+        private String ward;
+
+        private List<String> acceptedTypes = List.of();
+
+        @Size(max = 60)
+        private String capacity;
+
+        private boolean operational = true;
+
+        @Size(max = 30)
+        private String contact;
+    }
+
+    public record FacilitySuggestionView(
+            Long id,
+            String name,
+            String facilityType,
+            String address,
+            String ward,
+            List<String> acceptedLabels,
+            boolean operational,
+            Double distanceMeters,
+            Double durationSeconds,
+            String distanceLabel,
+            String durationLabel,
+            int score,
+            String navigateUrl,
+            Double latitude,
+            Double longitude) {
     }
 
     public record ApiResponse(boolean success, String message, Object data) {

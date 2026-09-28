@@ -18,7 +18,8 @@ import org.junit.jupiter.api.Test;
 class EntityMappingTest {
 
     private static final List<Class<?>> ENTITIES = List.of(
-            User.class, Report.class, Team.class, Assignment.class, StatusHistory.class);
+            User.class, Report.class, Team.class, Assignment.class, StatusHistory.class,
+            DisposalFacility.class);
 
     @Test
     void allEntitiesProduceValidMappings() {
@@ -37,8 +38,18 @@ class EntityMappingTest {
                 assertThat(metadata.getEntityBinding("CleanVision.domain.Team")).isNotNull();
                 assertThat(metadata.getEntityBinding("CleanVision.domain.Assignment")).isNotNull();
                 assertThat(metadata.getEntityBinding("CleanVision.domain.StatusHistory")).isNotNull();
+                assertThat(metadata.getEntityBinding("CleanVision.domain.DisposalFacility")).isNotNull();
                 assertThat(metadata.getEntityBinding("CleanVision.domain.Report").getTable().getName())
                         .isEqualToIgnoringCase("reports");
+                assertThat(metadata.getEntityBinding("CleanVision.domain.DisposalFacility").getTable().getName())
+                        .isEqualToIgnoringCase("disposal_facilities");
+                java.util.Set<String> reportProperties = new java.util.HashSet<>();
+                metadata.getEntityBinding("CleanVision.domain.Report")
+                        .getPropertyClosure()
+                        .forEach(p -> reportProperties.add(p.getName()));
+                assertThat(reportProperties).contains("collectedAt", "disposedAt", "quantityKg",
+                        "disposalFacility", "routeDistanceM", "routeDurationS",
+                        "teamLatitude", "teamLongitude");
             } finally {
                 StandardServiceRegistryBuilder.destroy(registry);
             }

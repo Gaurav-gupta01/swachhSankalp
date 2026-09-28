@@ -17,6 +17,7 @@ import CleanVision.domain.Report;
 import CleanVision.domain.User;
 import CleanVision.domain.WasteCategory;
 import CleanVision.domain.Severity;
+import CleanVision.dto.Forms.DashboardStatistics;
 import CleanVision.dto.Forms.ReportForm;
 import CleanVision.security.AuthInterceptor;
 import CleanVision.service.AppException;
@@ -39,12 +40,20 @@ public class CitizenController {
     @GetMapping("/")
     public String home(Model model,
             @RequestAttribute(name = AuthInterceptor.CURRENT_USER, required = false) User user) {
-        if (user != null && user.getRole().isTeamLeader()) {
-            return "redirect:/team";
+        if (user != null) {
+            return "redirect:" + user.getRole().dashboardPath();
         }
-        boolean mine = user != null && !user.getRole().isOfficer();
-        model.addAttribute("stats", mine ? statsService.forUser(user) : statsService.dashboard());
-        model.addAttribute("scopeMine", mine);
+        DashboardStatistics stats = statsService.dashboard();
+        model.addAttribute("stats", stats);
+        model.addAttribute("geoPoints", statsService.allReportsGeo());
+
+        Report showcase = reportService.latestCompletedWithAfterImage();
+        if (showcase != null) {
+            model.addAttribute("beforeImage", showcase.getImageUrl());
+            model.addAttribute("afterImage", showcase.getAfterImageUrl());
+        } else if (!stats.recentReports().isEmpty()) {
+            model.addAttribute("beforeImage", stats.recentReports().get(0).get("imageUrl"));
+        }
         return "index";
     }
 
@@ -156,7 +165,7 @@ public class CitizenController {
     }
 
     private String staffHome(User user) {
-        return user.getRole().isOfficer() ? "redirect:/admin" : "redirect:/team";
+        return "redirect:" + user.getRole().dashboardPath();
     }
 
     private AiResult rebuild(AiResult stored, ReportForm form) {
