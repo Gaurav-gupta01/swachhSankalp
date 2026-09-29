@@ -77,7 +77,7 @@ public class Msg91OtpSender implements OtpSender {
             log.warn("MSG91 OTP request interrupted: {}", ex.getMessage());
             return false;
         } catch (Exception ex) {
-            log.warn("MSG91 OTP request failed: {}", ex.getMessage());
+            log.warn("MSG91 OTP request failed: {}", ex.toString());
             return false;
         }
     }

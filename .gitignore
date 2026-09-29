@@ -4,6 +4,9 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 application.properties
+# The H2 test database config must travel with the code so `./mvnw test` never
+# touches MySQL; only the real application.properties (with credentials) stays local.
+!src/test/resources/application.properties
 
 ### STS ###
 .apt_generated
