@@ -11,6 +11,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import org.springframework.web.multipart.MultipartFile;
 
 public final class Forms {
 
@@ -28,6 +29,8 @@ public final class Forms {
         @Email(message = "Enter a valid email")
         private String email;
 
+        /** Mandatory — proven with an OTP before the account is created. */
+        @NotBlank(message = "Mobile number is required")
         @Size(max = 20)
         private String phone;
 
@@ -73,6 +76,32 @@ public final class Forms {
     }
 
     @Data
+    public static class AnimalReportForm {
+
+        @NotBlank(message = "Choose the animal you are reporting")
+        private String animalType;
+
+        @NotBlank(message = "Tell us the condition of the animal")
+        private String animalCondition;
+
+        /** Optional — citizens may report an animal without a photo. */
+        private MultipartFile image;
+
+        private Double latitude;
+
+        private Double longitude;
+
+        @Size(max = 255)
+        private String address;
+
+        @Size(max = 60)
+        private String ward;
+
+        @Size(max = 500)
+        private String description;
+    }
+
+    @Data
     public static class TeamForm {
 
         @NotBlank(message = "Team name is required")
@@ -89,6 +118,9 @@ public final class Forms {
         private String contact;
 
         private boolean active = true;
+
+        /** WASTE or ANIMAL — defaults to waste cleanup. */
+        private String teamType = "WASTE";
     }
 
     @Data
@@ -231,6 +263,10 @@ public final class Forms {
 
         public static ApiResponse error(String message) {
             return new ApiResponse(false, message, null);
+        }
+
+        public static ApiResponse error(String message, Object data) {
+            return new ApiResponse(false, message, data);
         }
     }
 

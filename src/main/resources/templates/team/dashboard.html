@@ -45,12 +45,16 @@
         <div class="list-group list-group-flush" th:if="${!#lists.isEmpty(reports)}">
             <div class="list-group-item px-0 d-flex gap-3 align-items-center flex-wrap"
                  th:each="r : ${reports}">
-                <img th:src="@{'/uploads/' + ${r.imageUrl}}" alt="" class="rounded"
+                <div class="img-placeholder thumb" th:if="${r.imageUrl == null}"
+                     style="width:72px;height:72px;min-height:0;max-height:none;border-radius:.5rem;flex:0 0 auto">
+                    <span th:text="${r.wasteType.icon}">🐾</span>
+                </div>
+                <img th:if="${r.imageUrl != null}" th:src="@{'/uploads/' + ${r.imageUrl}}" alt="" class="rounded"
                      style="width:72px;height:72px;object-fit:cover;background:#10201a">
                 <div class="flex-grow-1" style="min-width:200px">
                     <div class="fw-semibold">
-                        <span th:text="${r.wasteType.icon}">🗑️</span>
-                        <span th:text="${r.wasteType.label}">Plastic</span>
+                        <span th:text="${r.animalType != null ? r.animalType.icon : r.wasteType.icon}">🗑️</span>
+                        <span th:text="${r.animalType != null ? r.animalType.label : r.wasteType.label}">Plastic</span>
                         <span class="text-muted small fw-normal" th:text="'· ' + ${r.publicId}">CV10001</span>
                     </div>
                     <div class="small text-muted">

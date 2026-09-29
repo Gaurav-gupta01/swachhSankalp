@@ -37,6 +37,16 @@
                         <input type="text" class="form-control" th:field="*{ward}" placeholder="Ward 4">
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">Team handles</label>
+                        <select class="form-select" th:field="*{teamType}" required>
+                            <option th:each="type : ${teamTypes}" th:value="${type}"
+                                    th:text="${type.icon + ' ' + type.label}">♻️ Waste cleanup</option>
+                        </select>
+                        <div class="form-text">Waste reports are assigned to waste crews, animal reports to
+                            animal rescue crews.
+                        </div>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Team leader</label>
                         <input type="text" class="form-control" th:field="*{leader}" placeholder="Full name">
                     </div>

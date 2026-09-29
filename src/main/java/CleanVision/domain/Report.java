@@ -35,7 +35,7 @@ public class Report {
     @JoinColumn(name = "user_id", nullable = false)
     private User reporter;
 
-    @Column(name = "image_url", nullable = false, length = 255)
+    @Column(name = "image_url", length = 255)
     private String imageUrl;
 
     @Column(name = "after_image_url", length = 255)
@@ -51,6 +51,14 @@ public class Report {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
     private Severity severity = Severity.MEDIUM;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "animal_type", length = 30)
+    private AnimalType animalType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "animal_condition", length = 30)
+    private AnimalCondition animalCondition;
 
     @Column
     private Double latitude;

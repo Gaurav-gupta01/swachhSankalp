@@ -13,6 +13,7 @@ public enum WasteCategory {
     E_WASTE("E-Waste", "🔋"),
     CONSTRUCTION("Construction", "🏗️"),
     MIXED("Mixed Waste", "🗑️"),
+    ANIMAL("Animal", "🐾"),
     OTHER("Other/Unknown", "❓");
 
     private final String label;

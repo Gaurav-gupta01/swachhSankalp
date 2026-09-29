@@ -21,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 import CleanVision.ai.AiClassifier;
 import CleanVision.ai.AiResult;
 import CleanVision.domain.Assignment;
+import CleanVision.domain.OtpCode;
 import CleanVision.domain.Report;
 import CleanVision.domain.ReportStatus;
 import CleanVision.domain.Role;
@@ -34,6 +35,7 @@ import CleanVision.security.AuthInterceptor;
 import CleanVision.service.AppException;
 import CleanVision.service.AuthService;
 import CleanVision.service.ImageStorageService;
+import CleanVision.service.OtpService;
 import CleanVision.service.ReportService;
 import CleanVision.service.StatsService;
 import jakarta.servlet.http.HttpSession;
@@ -51,14 +53,20 @@ public class ApiController {
     private final ReportService reportService;
     private final StatsService statsService;
     private final AuthService authService;
+    private final OtpService otpService;
 
     public record StatusRequest(String status, String note) {
     }
 
+    public record OtpRequest(String phone, String code, String purpose) {
+    }
+
     @PostMapping("/auth/register")
-    public ApiResponse register(@RequestBody RegisterForm form, HttpSession session) {
+    public ApiResponse register(@RequestBody RegisterForm form,
+            jakarta.servlet.http.HttpServletRequest request, HttpSession session) {
         try {
-            User user = authService.register(form);
+            User user = authService.register(form, AuthController.verifiedPhone(request));
+            session.removeAttribute(AuthController.VERIFIED_PHONE);
             session.setAttribute(AuthInterceptor.SESSION_USER_ID, user.getId());
             return ApiResponse.ok("Account created", publicUser(user));
         } catch (AppException ex) {
@@ -70,11 +78,97 @@ public class ApiController {
     public ApiResponse login(@RequestBody LoginForm form, HttpSession session) {
         try {
             User user = authService.authenticate(form);
+            if (authService.needsMobileVerification(user)) {
+                return ApiResponse.error(
+                        "Mobile number is not verified yet. Send and verify an OTP first.",
+                        AuthController.verificationRequired(user));
+            }
             session.setAttribute(AuthInterceptor.SESSION_USER_ID, user.getId());
             return ApiResponse.ok("Logged in", publicUser(user));
         } catch (AppException ex) {
             return ApiResponse.error(ex.getMessage());
         }
+    }
+
+    /** Step 1 — deliver a 6-digit code to the number (MSG91, log fallback if unavailable). */
+    @PostMapping("/auth/otp/send")
+    public ApiResponse sendOtp(@RequestBody OtpRequest body) {
+        try {
+            String purpose = normalizePurpose(body.purpose());
+            if (OtpCode.PURPOSE_LOGIN.equals(purpose)) {
+                User user = authService.findByMobile(body.phone());
+                if (user == null || !authService.needsMobileVerification(user)) {
+                    return ApiResponse.error("No unverified citizen account uses this number");
+                }
+            }
+            otpService.send(body.phone(), purpose);
+            return ApiResponse.ok("OTP sent", Map.of("purpose", purpose));
+        } catch (AppException ex) {
+            return ApiResponse.error(ex.getMessage());
+        }
+    }
+
+    /** Step 2 — check the code; a verified number is stored for registration. */
+    @PostMapping("/auth/otp/verify")
+    public ApiResponse verifyOtp(@RequestBody OtpRequest body, HttpSession session) {
+        try {
+            String purpose = normalizePurpose(body.purpose());
+            otpService.verify(body.phone(), purpose, body.code());
+            if (OtpCode.PURPOSE_LOGIN.equals(purpose)) {
+                User user = authService.findByMobile(body.phone());
+                if (user != null && authService.needsMobileVerification(user)) {
+                    authService.markMobileVerified(user, body.phone());
+                }
+                Map<String, Object> data = new LinkedHashMap<>();
+                if (user != null) {
+                    data.putAll(publicUser(user));
+                }
+                // A browser sitting on the login gate is let straight in.
+                Object pending = session.getAttribute(AuthController.PENDING_VERIFY_USER_ID);
+                if (user != null && pending instanceof Long id && id.equals(user.getId())) {
+                    session.setAttribute(AuthInterceptor.SESSION_USER_ID, user.getId());
+                    data.put("redirect", landing(user, session.getAttribute(AuthController.PENDING_VERIFY_NEXT)));
+                    session.removeAttribute(AuthController.PENDING_VERIFY_USER_ID);
+                    session.removeAttribute(AuthController.PENDING_VERIFY_PHONE);
+                    session.removeAttribute(AuthController.PENDING_VERIFY_NEXT);
+                }
+                return ApiResponse.ok("Mobile verified", data);
+            }
+            session.setAttribute(AuthController.VERIFIED_PHONE, OtpService.normalize(body.phone()));
+            return ApiResponse.ok("Mobile verified", Map.of("phone", OtpService.normalize(body.phone())));
+        } catch (AppException ex) {
+            return ApiResponse.error(ex.getMessage());
+        }
+    }
+
+    private String normalizePurpose(String purpose) {
+        if (purpose == null || purpose.isBlank()) {
+            return OtpCode.PURPOSE_REGISTER;
+        }
+        String value = purpose.trim().toUpperCase();
+        if (!value.equals(OtpCode.PURPOSE_REGISTER) && !value.equals(OtpCode.PURPOSE_LOGIN)) {
+            throw new AppException("Unknown OTP purpose: " + purpose);
+        }
+        return value;
+    }
+
+    /** Role-safe landing page — a citizen can never be bounced into /admin. */
+    private String landing(User user, Object nextValue) {
+        String dashboard = user.getRole().dashboardPath();
+        if (!(nextValue instanceof String next) || !next.startsWith("/")
+                || next.startsWith("//") || next.equals("/")) {
+            return dashboard;
+        }
+        if (next.startsWith("/admin") && !user.getRole().isOfficer()) {
+            return dashboard;
+        }
+        if (next.startsWith("/team") && !user.getRole().isTeamLeader()) {
+            return dashboard;
+        }
+        if (next.startsWith("/my-reports") && !user.getRole().canReport()) {
+            return dashboard;
+        }
+        return next;
     }
 
     @PostMapping("/ai/classify")
@@ -204,11 +298,16 @@ public class ApiController {
         map.put("reporter", report.getReporter().getName());
         map.put("reporterEmail", report.getReporter().getEmail());
         map.put("reporterPhone", report.getReporter().getPhone());
-        map.put("imageUrl", "/uploads/" + report.getImageUrl());
+        map.put("imageUrl", report.getImageUrl() == null ? null : "/uploads/" + report.getImageUrl());
         map.put("afterImageUrl", report.getAfterImageUrl() == null ? null
                 : "/uploads/" + report.getAfterImageUrl());
         map.put("wasteType", report.getWasteType().getLabel());
         map.put("category", report.getWasteType().name());
+        map.put("animalType", report.getAnimalType() == null ? null : report.getAnimalType().name());
+        map.put("animalTypeLabel", report.getAnimalType() == null ? null : report.getAnimalType().getLabel());
+        map.put("animalCondition", report.getAnimalCondition() == null ? null : report.getAnimalCondition().name());
+        map.put("animalConditionLabel",
+                report.getAnimalCondition() == null ? null : report.getAnimalCondition().getLabel());
         map.put("confidence", report.getConfidence());
         map.put("severity", report.getSeverity().name());
         map.put("severityLabel", report.getSeverity().getLabel());

@@ -21,6 +21,7 @@ import CleanVision.domain.Role;
 import CleanVision.domain.Severity;
 import CleanVision.domain.StatusHistory;
 import CleanVision.domain.Team;
+import CleanVision.domain.TeamType;
 import CleanVision.domain.User;
 import CleanVision.domain.WasteCategory;
 import CleanVision.repository.ReportRepository;
@@ -47,6 +48,8 @@ public class DataSeeder implements ApplicationRunner {
     static final String SUPER_ADMIN_EMAIL = "super@cleanvision.gov.in";
     static final String SUPER_ADMIN_PASSWORD = "super123";
 
+    static final String ANIMAL_TEAM_NAME = "Animal Rescue Unit";
+
     static final String LEADER_EMAIL = "leader@cleanvision.gov.in";
     static final String LEADER_PASSWORD = "leader123";
 
@@ -63,6 +66,8 @@ public class DataSeeder implements ApplicationRunner {
         boolean fresh = users.count() == 0;
         ensureSuperAdmin();
         if (!fresh) {
+            // Databases seeded before the waste/animal split may have no animal team at all.
+            ensureAnimalTeam();
             ensureTeamLeader();
             return;
         }
@@ -71,9 +76,10 @@ public class DataSeeder implements ApplicationRunner {
         User citizen = user("Demo Citizen", "citizen@demo.in", "demo123", Role.CITIZEN);
 
         List<Team> seedTeams = List.of(
-                team("Team A", "Ward 1", "Rahul Sawant", "9822011111"),
-                team("Team B", "Ward 5", "Priya Naik", "9822022222"),
-                team("Team C", "Ward 3", "Imran Shaikh", "9822033333"));
+                team("Team A", "Ward 1", "Rahul Sawant", "9822011111", TeamType.WASTE),
+                team("Team B", "Ward 5", "Priya Naik", "9822022222", TeamType.WASTE),
+                team("Team C", "Ward 3", "Imran Shaikh", "9822033333", TeamType.WASTE),
+                team(ANIMAL_TEAM_NAME, "Ward 2", "Sneha Kadam", "9822044444", TeamType.ANIMAL));
 
         record Seed(WasteCategory category, Severity severity, String ward, String address,
                 ReportStatus status, String description, long ageHours) {
@@ -193,22 +199,38 @@ public class DataSeeder implements ApplicationRunner {
         log.info("Created team leader account {} for {}", leader.getEmail(), team.getTeamName());
     }
 
+    /** An animal report must always find somewhere to go, even on an already-seeded database. */
+    private void ensureAnimalTeam() {
+        if (teams.existsByTeamName(ANIMAL_TEAM_NAME)) {
+            return;
+        }
+        Team team = team(ANIMAL_TEAM_NAME, "Ward 2", "Sneha Kadam", "9822044444", TeamType.ANIMAL);
+        log.info("Seeded animal cleanup team '{}' for {}", team.getTeamName(), team.getWard());
+    }
+
     private User user(String name, String email, String password, Role role) {
         User user = new User();
         user.setName(name);
         user.setEmail(email);
         user.setRole(role);
         user.setPasswordHash(hasher.hash(password));
-        user.setPhone("9822000000");
+        // Every seeded account needs its own number — verified mobiles must be unique.
+        user.setPhone(uniqueDemoPhone());
         return users.save(user);
     }
 
-    private Team team(String name, String ward, String leader, String contact) {
+    private String uniqueDemoPhone() {
+        long offset = users.count();
+        return "9822" + String.format("%06d", offset);
+    }
+
+    private Team team(String name, String ward, String leader, String contact, TeamType type) {
         Team team = new Team();
         team.setTeamName(name);
         team.setWard(ward);
         team.setLeader(leader);
         team.setContact(contact);
+        team.setTeamType(type);
         return teams.save(team);
     }
 
@@ -241,8 +263,8 @@ public class DataSeeder implements ApplicationRunner {
                     new Color(180, 40, 40), new Color(220, 180, 40) };
             case CONSTRUCTION -> new Color[] { new Color(150, 145, 135), new Color(175, 90, 70), new Color(200, 190, 175),
                     new Color(120, 115, 105), new Color(220, 215, 205) };
-            case MIXED, OTHER -> new Color[] { new Color(60, 120, 200), new Color(90, 150, 60), new Color(200, 170, 60),
-                    new Color(180, 70, 70), new Color(140, 140, 140) };
+            case MIXED, OTHER, ANIMAL -> new Color[] { new Color(60, 120, 200), new Color(90, 150, 60),
+                    new Color(200, 170, 60), new Color(180, 70, 70), new Color(140, 140, 140) };
         };
 
         Color background = switch (category) {

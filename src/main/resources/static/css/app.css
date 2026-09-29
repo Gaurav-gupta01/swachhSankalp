@@ -1886,3 +1886,68 @@ html {
     font-size: .8rem;
     color: #166534;
 }
+
+/* Shown when a report has no photo — animal reports can be filed without one */
+.img-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .25rem;
+    width: 100%;
+    min-height: 150px;
+    max-height: 320px;
+    padding: 1rem;
+    background: #f2f5f3;
+    border: 1px dashed #c9d6cf;
+    border-radius: .75rem;
+    color: #7b8a83;
+    text-align: center;
+}
+
+.img-placeholder.thumb {
+    height: 150px;
+    min-height: 0;
+    max-height: none;
+    padding: .5rem;
+    border-radius: .75rem .75rem 0 0;
+}
+
+/* ---- Mobile OTP verification (registration + login gate) ---- */
+.otp-block {
+    background: #f6faf7;
+    border: 1px solid #d8e5dd;
+    border-radius: .75rem;
+    padding: .85rem 1rem;
+}
+
+.otp-boxes {
+    display: flex;
+    gap: .4rem;
+}
+
+.otp-box {
+    width: 2.5rem;
+    height: 2.9rem;
+    text-align: center;
+    font-size: 1.35rem;
+    font-weight: 600;
+    border: 1px solid #c4d5cb;
+    border-radius: .5rem;
+    background: #fff;
+}
+
+.otp-box:focus {
+    border-color: #16a34a;
+    box-shadow: 0 0 0 .18rem rgba(22, 163, 74, .18);
+    outline: none;
+}
+
+.otp-status {
+    font-size: .85rem;
+    margin-top: .4rem;
+}
+
+.otp-status.is-ok { color: #15803d; }
+.otp-status.is-error { color: #b91c1c; }
+.otp-status.is-muted { color: #6b7f76; }

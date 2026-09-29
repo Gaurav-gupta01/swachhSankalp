@@ -37,6 +37,12 @@
                     <li class="nav-item" th:if="${currentUser == null}">
                         <a class="nav-link" th:href="@{/login}">Login</a>
                     </li>
+                    <li class="nav-item"
+                        th:if="${currentUser == null or currentUser.role.canReport()}">
+                        <a class="nav-link" th:href="@{/report/animal}">
+                            <i class="bi bi-heart-pulse me-1"></i>Report Animal
+                        </a>
+                    </li>
                     <li class="nav-item ms-lg-2"
                         th:if="${currentUser == null or currentUser.role.canReport()}">
                         <a class="btn btn-green-sm" th:href="@{/report/new}">
@@ -59,6 +65,9 @@
                             <li><hr class="dropdown-divider"></li>
                             <li th:if="${currentUser.role.canReport()}">
                                 <a class="dropdown-item" th:href="@{/report/new}">Report Waste</a>
+                            </li>
+                            <li th:if="${currentUser.role.canReport()}">
+                                <a class="dropdown-item" th:href="@{/report/animal}">Report an Animal</a>
                             </li>
                             <li th:if="${currentUser.role.canReport()}">
                                 <a class="dropdown-item" th:href="@{/my-reports}">My Reports</a>
@@ -119,6 +128,7 @@
                 <h3>Product</h3>
                 <ul>
                     <li><a th:href="@{/report/new}">Report Waste</a></li>
+                    <li><a th:href="@{/report/animal}">Report an Animal</a></li>
                     <li><a href="/#how-it-works">How It Works</a></li>
                     <li><a href="/#ai-demo">AI Classification</a></li>
                     <li><a th:href="@{/admin}">Dashboard</a></li>

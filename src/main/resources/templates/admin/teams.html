@@ -28,6 +28,9 @@
                     <div>
                         <div class="fw-semibold fs-5" th:text="${team.teamName}">Team A</div>
                         <div class="small text-muted" th:text="${team.ward != null ? team.ward : '-'}">Ward 1</div>
+                        <span class="badge text-bg-info mt-1"
+                              th:if="${team.teamType != null}"
+                              th:text="${team.teamType.icon + ' ' + team.teamType.label}">♻️ Waste cleanup</span>
                     </div>
                     <span class="badge"
                           th:classappend="${team.active ? 'text-bg-success' : 'text-bg-secondary'}"

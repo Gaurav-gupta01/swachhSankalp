@@ -52,12 +52,12 @@ public class FacilitySeeder implements ApplicationRunner {
 
         seed("Margao Collection & Transfer Station", FacilityType.TRANSFER_STATION,
                 15.2870, 73.9480, "Bus Stand Back Road, Margao", "Ward 4",
-                List.of("MIXED", "PLASTIC", "PAPER", "GLASS", "METAL", "ORGANIC"),
+                List.of("MIXED", "PLASTIC", "PAPER", "GLASS", "METAL", "ORGANIC", "ANIMAL"),
                 "80 TPD", true, "020-4000116");
 
         seed("Betalbatim Engineered Landfill", FacilityType.LANDFILL,
                 15.2400, 73.9200, "Betalbatim, Margao", "Ward 7",
-                List.of("MIXED", "CONSTRUCTION", "ORGANIC"), "120 TPD", true, "020-4000117");
+                List.of("MIXED", "CONSTRUCTION", "ORGANIC", "ANIMAL"), "120 TPD", true, "020-4000117");
 
         seed("Vasco Sorting Yard", FacilityType.TRANSFER_STATION,
                 15.4000, 73.8100, "Vasco da Gama", "Ward 9",

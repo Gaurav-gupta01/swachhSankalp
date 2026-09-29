@@ -2,6 +2,8 @@ package CleanVision.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -35,4 +37,9 @@ public class Team {
 
     @Column(nullable = false)
     private boolean active = true;
+
+    /** Waste crews and animal rescue crews are separate — see {@link TeamType}. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "team_type", nullable = false, length = 20)
+    private TeamType teamType = TeamType.WASTE;
 }

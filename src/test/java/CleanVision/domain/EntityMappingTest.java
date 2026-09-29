@@ -19,7 +19,7 @@ class EntityMappingTest {
 
     private static final List<Class<?>> ENTITIES = List.of(
             User.class, Report.class, Team.class, Assignment.class, StatusHistory.class,
-            DisposalFacility.class);
+            DisposalFacility.class, OtpCode.class);
 
     @Test
     void allEntitiesProduceValidMappings() {
@@ -39,6 +39,7 @@ class EntityMappingTest {
                 assertThat(metadata.getEntityBinding("CleanVision.domain.Assignment")).isNotNull();
                 assertThat(metadata.getEntityBinding("CleanVision.domain.StatusHistory")).isNotNull();
                 assertThat(metadata.getEntityBinding("CleanVision.domain.DisposalFacility")).isNotNull();
+                assertThat(metadata.getEntityBinding("CleanVision.domain.OtpCode")).isNotNull();
                 assertThat(metadata.getEntityBinding("CleanVision.domain.Report").getTable().getName())
                         .isEqualToIgnoringCase("reports");
                 assertThat(metadata.getEntityBinding("CleanVision.domain.DisposalFacility").getTable().getName())

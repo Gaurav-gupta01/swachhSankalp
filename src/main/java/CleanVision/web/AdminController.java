@@ -77,7 +77,7 @@ public class AdminController {
         model.addAttribute("report", report);
         model.addAttribute("timeline", reportService.timeline(report));
         model.addAttribute("assignment", reportService.activeAssignment(report));
-        model.addAttribute("teams", teams.findByActiveTrueOrderByTeamNameAsc());
+        model.addAttribute("teams", assignableTeams(report));
         model.addAttribute("statuses", ReportStatus.workflow());
         return "admin/report-detail";
     }
@@ -91,7 +91,12 @@ public class AdminController {
         Team team = teams.findById(teamId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found"));
 
-        reportService.assign(report, team, actor(user));
+        try {
+            reportService.assign(report, team, actor(user));
+        } catch (AppException ex) {
+            redirect.addFlashAttribute("errorMessage", ex.getMessage());
+            return "redirect:/admin/reports/" + publicId;
+        }
         redirect.addFlashAttribute("flashMessage", publicId + " assigned to " + team.getTeamName());
         return "redirect:/admin/reports/" + publicId;
     }
@@ -169,6 +174,7 @@ public class AdminController {
         }
         model.addAttribute("editing", false);
         model.addAttribute("teamId", null);
+        model.addAttribute("teamTypes", CleanVision.domain.TeamType.values());
         return "admin/team-form";
     }
 
@@ -197,10 +203,14 @@ public class AdminController {
             form.setLeader(team.getLeader());
             form.setContact(team.getContact());
             form.setActive(team.isActive());
+            form.setTeamType(team.getTeamType() == null
+                    ? CleanVision.domain.TeamType.WASTE.name()
+                    : team.getTeamType().name());
             model.addAttribute("form", form);
         }
         model.addAttribute("editing", true);
         model.addAttribute("teamId", team.getId());
+        model.addAttribute("teamTypes", CleanVision.domain.TeamType.values());
         return "admin/team-form";
     }
 
@@ -242,6 +252,15 @@ public class AdminController {
         team.setLeader(form.getLeader() == null ? null : form.getLeader().trim());
         team.setContact(form.getContact() == null ? null : form.getContact().trim());
         team.setActive(form.isActive());
+        team.setTeamType(CleanVision.domain.TeamType.fromApi(form.getTeamType()));
+    }
+
+    /** Waste reports go to waste crews, animal reports to animal rescue crews. */
+    private List<Team> assignableTeams(Report report) {
+        CleanVision.domain.TeamType type = report.getWasteType() == CleanVision.domain.WasteCategory.ANIMAL
+                ? CleanVision.domain.TeamType.ANIMAL
+                : CleanVision.domain.TeamType.WASTE;
+        return teams.findByActiveTrueAndTeamTypeOrderByTeamNameAsc(type);
     }
 
     private String actor(User user) {

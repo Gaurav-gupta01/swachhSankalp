@@ -53,7 +53,9 @@ public class StatsService {
                 .count();
 
         double averageConfidence = all.isEmpty() ? 0
-                : all.stream().mapToDouble(Report::getConfidence).average().orElse(0);
+                : all.stream()
+                        .filter(report -> report.getWasteType() != WasteCategory.ANIMAL)
+                        .mapToDouble(Report::getConfidence).average().orElse(0);
 
         Map<String, Long> byCategory = new LinkedHashMap<>();
         for (WasteCategory category : WasteCategory.values()) {

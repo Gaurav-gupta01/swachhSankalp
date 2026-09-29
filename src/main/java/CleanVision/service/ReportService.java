@@ -8,26 +8,35 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import CleanVision.ai.AiResult;
+import CleanVision.domain.AnimalCondition;
+import CleanVision.domain.AnimalType;
 import CleanVision.domain.Assignment;
 import CleanVision.domain.Report;
 import CleanVision.domain.ReportStatus;
 import CleanVision.domain.StatusHistory;
 import CleanVision.domain.Team;
+import CleanVision.domain.TeamType;
 import CleanVision.domain.User;
+import CleanVision.domain.WasteCategory;
+import CleanVision.dto.Forms.AnimalReportForm;
 import CleanVision.dto.Forms.ReportForm;
 import CleanVision.repository.AssignmentRepository;
 import CleanVision.repository.ReportRepository;
 import CleanVision.repository.StatusHistoryRepository;
+import CleanVision.repository.TeamRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ReportService {
 
     private final ReportRepository reports;
     private final StatusHistoryRepository history;
     private final AssignmentRepository assignments;
     private final ImageStorageService images;
+    private final TeamRepository teams;
 
     @Transactional
     public Report create(User reporter, ReportForm form, AiResult ai) {
@@ -60,6 +69,90 @@ public class ReportService {
         return report;
     }
 
+    /**
+     * Files an animal report. These skip the image classifier entirely — the citizen
+     * states the animal and its condition — but they run through the same queue,
+     * dashboards and cleanup workflow as every other report.
+     */
+    @Transactional
+    public Report createAnimal(User reporter, AnimalReportForm form, String imageFilename) {
+        if (imageFilename != null && !images.exists(imageFilename)) {
+            throw new AppException("The uploaded image was not found, please upload it again");
+        }
+
+        AnimalType animalType = AnimalType.find(form.getAnimalType())
+                .orElseThrow(() -> new AppException("Choose one of the listed animals"));
+        AnimalCondition animalCondition = AnimalCondition.find(form.getAnimalCondition())
+                .orElseThrow(() -> new AppException("Choose one of the listed animal conditions"));
+
+        Report report = new Report();
+        report.setReporter(reporter);
+        report.setImageUrl(imageFilename);
+        report.setWasteType(WasteCategory.ANIMAL);
+        report.setAnimalType(animalType);
+        report.setAnimalCondition(animalCondition);
+        report.setConfidence(0.0);
+        report.setSeverity(animalCondition.getSeverity());
+        report.setLatitude(form.getLatitude());
+        report.setLongitude(form.getLongitude());
+        report.setAddress(form.getAddress());
+        report.setWard(form.getWard());
+        report.setDescription(form.getDescription());
+        report.setStatus(ReportStatus.SUBMITTED);
+        report.setCreatedAt(LocalDateTime.now());
+        report = reports.save(report);
+
+        report.setPublicId("CV" + (10000 + report.getId()));
+        report = reports.save(report);
+
+        record(report, ReportStatus.SUBMITTED, reporter.getName(),
+                animalType.getIcon() + " " + animalType.getLabel() + " · "
+                        + animalCondition.getIcon() + " " + animalCondition.getLabel()
+                        + " — reported by citizen");
+
+        autoAssignToAnimalTeam(report, reporter.getName());
+        return report;
+    }
+
+    /**
+     * Animal reports go straight to an animal rescue crew — prefer one covering the
+     * report's ward, otherwise fall back to any active animal team. If the city has
+     * none configured yet the report stays in the queue for an officer to assign.
+     */
+    private void autoAssignToAnimalTeam(Report report, String updatedBy) {
+        List<Team> candidates = List.of();
+        if (report.getWard() != null && !report.getWard().isBlank()) {
+            candidates = teams.findByWardAndActiveTrueAndTeamType(report.getWard().trim(), TeamType.ANIMAL);
+        }
+        if (candidates.isEmpty()) {
+            candidates = teams.findByActiveTrueAndTeamTypeOrderByTeamNameAsc(TeamType.ANIMAL);
+        }
+        if (candidates.isEmpty()) {
+            log.warn("No active animal rescue team configured — {} left for manual assignment",
+                    report.getPublicId());
+            return;
+        }
+        assign(report, candidates.get(0), updatedBy);
+    }
+
+    /** Waste crews handle waste, animal rescue crews handle animals — never both. */
+    private void requireMatchingTeam(Report report, Team team) {
+        if (team == null) {
+            throw new AppException("Choose a cleanup team first");
+        }
+        TeamType teamType = team.getTeamType() == null ? TeamType.WASTE : team.getTeamType();
+        TeamType required = report.getWasteType() == WasteCategory.ANIMAL
+                ? TeamType.ANIMAL
+                : TeamType.WASTE;
+        if (teamType != required) {
+            String article = teamType == TeamType.ANIMAL ? "an " : "a ";
+            throw new AppException(team.getTeamName() + " is " + article
+                    + teamType.getLabel().toLowerCase()
+                    + " team and cannot take " + report.getPublicId() + " ("
+                    + required.getLabel().toLowerCase() + " reports only)");
+        }
+    }
+
     @Transactional(readOnly = true)
     public Report byPublicId(String publicId) {
         return reports.findByPublicId(publicId)
@@ -85,6 +178,7 @@ public class ReportService {
                 .toList();
     }
 
+    @Transactional
     public Report changeStatus(Report report, ReportStatus target, String updatedBy, String note) {
         if (report.getStatus() == target) {
             return report;
@@ -103,6 +197,8 @@ public class ReportService {
 
     @Transactional
     public Report assign(Report report, Team team, String updatedBy) {
+        requireMatchingTeam(report, team);
+
         assignments.findFirstByReportIdAndActiveTrue(report.getId()).ifPresent(existing -> {
             existing.setActive(false);
             existing.setCompletedAt(LocalDateTime.now());

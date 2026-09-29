@@ -37,6 +37,16 @@ public class User {
     @Column(length = 20)
     private String phone;
 
+    /**
+     * True once the mobile has been proven with an OTP. Citizens cannot sign in until
+     * this is set; staff accounts are marked verified when they are created.
+     */
+    @Column(name = "phone_verified", nullable = false)
+    private boolean phoneVerified;
+
+    @Column(name = "phone_verified_at")
+    private LocalDateTime phoneVerifiedAt;
+
     @Column(name = "password_hash", nullable = false, length = 100)
     private String passwordHash;
 

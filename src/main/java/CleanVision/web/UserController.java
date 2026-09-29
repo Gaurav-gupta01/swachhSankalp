@@ -63,7 +63,7 @@ public class UserController {
 
         try {
             User created = authService.addUser(form.getName(), form.getEmail(), form.getPhone(),
-                    form.getPassword(), role, team);
+                    form.getPassword(), role, team, true);
             redirect.addFlashAttribute("flashMessage",
                     created.getName() + " created as " + role.getLabel());
         } catch (AppException ex) {

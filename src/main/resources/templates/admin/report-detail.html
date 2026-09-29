@@ -40,22 +40,32 @@
     <div class="row g-4">
         <div class="col-lg-7">
             <div class="card-soft p-4 mb-4">
-                <h2 class="h6 text-uppercase text-muted mb-3">Waste photo</h2>
-                <img class="preview-img mb-3" th:src="@{'/uploads/' + ${report.imageUrl}}" alt="Reported waste">
+                <h2 class="h6 text-uppercase text-muted mb-3"
+                     th:text="${report.animalType != null ? 'Animal photo' : 'Waste photo'}">Waste photo</h2>
+                <div class="img-placeholder mb-3" th:if="${report.imageUrl == null}">
+                    <span class="fs-1" th:text="${report.wasteType.icon}">🐾</span>
+                    <span class="small">No photo was attached to this report.</span>
+                </div>
+                <img class="preview-img mb-3" th:if="${report.imageUrl != null}"
+                     th:src="@{'/uploads/' + ${report.imageUrl}}" alt="Reported waste">
 
                 <div class="row g-3">
                     <div class="col-sm-4">
-                        <div class="text-muted small">Waste type</div>
+                        <div class="text-muted small"
+                             th:text="${report.animalType != null ? 'Animal' : 'Waste type'}">Waste type</div>
                         <div class="fw-semibold">
-                            <span th:text="${report.wasteType.icon}"></span>
-                            <span th:text="${report.wasteType.label}">Plastic</span>
+                            <span th:text="${report.animalType != null ? report.animalType.icon : report.wasteType.icon}"></span>
+                            <span th:text="${report.animalType != null ? report.animalType.label : report.wasteType.label}">Plastic</span>
                         </div>
                     </div>
                     <div class="col-sm-4">
-                        <div class="text-muted small">AI confidence</div>
-                        <span class="confidence-pill"
+                        <div class="text-muted small"
+                             th:text="${report.animalType != null ? 'Condition' : 'AI confidence'}">AI confidence</div>
+                        <span class="confidence-pill" th:if="${report.animalType == null}"
                               th:classappend="${report.confidence < 0.6 ? 'low' : ''}"
                               th:text="${#numbers.formatDecimal(report.confidence * 100, 1, 0)} + '%'">94%</span>
+                        <div class="fw-semibold" th:if="${report.animalType != null}"
+                             th:text="${report.animalCondition.icon + ' ' + report.animalCondition.label}">🟢 Alive / roaming</div>
                     </div>
                     <div class="col-sm-4">
                         <div class="text-muted small">Severity</div>
@@ -74,7 +84,8 @@
                 <div class="compare-grid">
                     <div>
                         <div class="small text-muted mb-1">Before</div>
-                        <img th:src="@{'/uploads/' + ${report.imageUrl}}" alt="Before">
+                        <img th:if="${report.imageUrl != null}" th:src="@{'/uploads/' + ${report.imageUrl}}" alt="Before">
+                        <div class="img-placeholder small" th:if="${report.imageUrl == null}">No photo</div>
                     </div>
                     <div>
                         <div class="small text-muted mb-1">After</div>
@@ -99,6 +110,15 @@
                             <option th:each="team : ${teams}" th:value="${team.id}"
                                     th:text="${team.teamName + ' (' + team.ward + ')'}">Team B (Ward 5)</option>
                         </select>
+                        <div class="form-text"
+                             th:text="${report.wasteType.name() == 'ANIMAL'
+                                       ? 'Animal reports are assigned to animal rescue teams only.'
+                                       : 'Waste reports are assigned to waste cleanup teams only.'}">
+                            Only matching teams are listed.
+                        </div>
+                        <div class="text-danger small" th:if="${#lists.isEmpty(teams)}">
+                            No active team of the required type yet — create one under Teams.
+                        </div>
                     </div>
                     <div class="col-sm-5">
                         <button class="btn btn-primary btn-sm w-100" type="submit">
@@ -196,17 +216,24 @@
             </div>
 
             <div class="card-soft p-4 mb-4">
-                <h2 class="h6 text-uppercase text-muted mb-3">AI classification</h2>
-                <div class="small text-muted mb-3">
+                <h2 class="h6 text-uppercase text-muted mb-3"
+                     th:text="${report.animalType != null ? 'Animal report' : 'AI classification'}">AI classification</h2>
+                <div class="small text-muted mb-3" th:if="${report.animalType == null}">
                     Detected automatically from the citizen photograph. Confidence below 60% means the
                     officer should confirm the category manually.
                 </div>
+                <div class="small text-muted mb-3" th:if="${report.animalType != null}">
+                    Filed through the animal reporting form — the citizen stated the animal and its
+                    condition directly, so no AI classification runs on these reports.
+                </div>
                 <div class="d-flex align-items-center gap-3 mb-3">
-                    <div class="fs-1" th:text="${report.wasteType.icon}">🗑️</div>
+                    <div class="fs-1" th:text="${report.animalType != null ? report.animalType.icon : report.wasteType.icon}">🗑️</div>
                     <div>
-                        <div class="h5 mb-0" th:text="${report.wasteType.label}">Plastic</div>
-                        <div class="small text-muted"
+                        <div class="h5 mb-0" th:text="${report.animalType != null ? report.animalType.label : report.wasteType.label}">Plastic</div>
+                        <div class="small text-muted" th:if="${report.animalType == null}"
                              th:text="'Confidence ' + ${#numbers.formatDecimal(report.confidence * 100, 1, 0)} + '%'">94%</div>
+                        <div class="small text-muted" th:if="${report.animalType != null}"
+                             th:text="${report.animalCondition.icon + ' ' + report.animalCondition.label}">🟢 Alive / roaming</div>
                     </div>
                 </div>
                 <div class="small text-muted" th:if="${report.description != null}">

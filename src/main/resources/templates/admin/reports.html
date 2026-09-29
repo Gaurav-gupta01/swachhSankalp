@@ -73,17 +73,23 @@
                 <tr th:each="report : ${reports}">
                     <td class="fw-semibold" th:text="${report.publicId}">CV10001</td>
                     <td>
-                        <img th:src="@{'/uploads/' + ${report.imageUrl}}" alt=""
+                        <img th:if="${report.imageUrl != null}" th:src="@{'/uploads/' + ${report.imageUrl}}" alt=""
                              style="width:56px;height:44px;object-fit:cover;border-radius:.4rem;background:#10201a">
+                        <div th:if="${report.imageUrl == null}"
+                             class="d-flex align-items-center justify-content-center"
+                             th:text="${report.wasteType.icon}"
+                             style="width:56px;height:44px;border-radius:.4rem;background:#f2f5f3">🐾</div>
                     </td>
                     <td>
-                        <span th:text="${report.wasteType.icon}"></span>
-                        <span th:text="${report.wasteType.label}">Plastic</span>
+                        <span th:text="${report.animalType != null ? report.animalType.icon : report.wasteType.icon}"></span>
+                        <span th:text="${report.animalType != null ? report.animalType.label : report.wasteType.label}">Plastic</span>
                     </td>
                     <td>
-                        <span class="confidence-pill"
+                        <span class="confidence-pill" th:if="${report.animalType == null}"
                               th:classappend="${report.confidence < 0.6 ? 'low' : ''}"
                               th:text="${#numbers.formatDecimal(report.confidence * 100, 1, 0)} + '%'">94%</span>
+                        <span class="small text-muted" th:if="${report.animalType != null}"
+                              th:text="${report.animalCondition.icon + ' ' + report.animalCondition.label}">🟢 Alive / roaming</span>
                     </td>
                     <td>
                         <span class="badge-severity badge"

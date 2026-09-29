@@ -44,9 +44,10 @@
                     <div class="cv-shot-card"
                          th:with="latest=${#lists.isEmpty(stats.recentReports) ? null : stats.recentReports[0]}">
                         <div class="cv-shot-frame">
-                            <img th:if="${latest != null}" th:src="@{'/uploads/' + ${latest.imageUrl}}"
+                            <img th:if="${latest != null and latest.imageUrl != null}"
+                                 th:src="@{'/uploads/' + ${latest.imageUrl}}"
                                  alt="Photograph of reported waste">
-                            <div class="cv-shot-art" th:if="${latest == null}">
+                            <div class="cv-shot-art" th:if="${latest == null or latest.imageUrl == null}">
                                 <span class="cv-art-big">📸</span>
                                 <span class="cv-art-waste">🗑️</span>
                                 <span class="cv-art-note">Point &middot; Capture &middot; Report</span>
@@ -61,10 +62,11 @@
 
                         <aside class="cv-ai-card">
                             <div class="cv-ai-title"><span class="cv-ai-dot"></span> AI ANALYSIS</div>
-                            <div class="cv-ai-thumb" th:if="${latest != null}">
+                            <div class="cv-ai-thumb" th:if="${latest != null and latest.imageUrl != null}">
                                 <img th:src="@{'/uploads/' + ${latest.imageUrl}}" alt="">
                             </div>
-                            <div class="cv-ai-thumb cv-ai-thumb-alt" th:if="${latest == null}">🧴 🛍️ 🥤</div>
+                            <div class="cv-ai-thumb cv-ai-thumb-alt"
+                                 th:if="${latest == null or latest.imageUrl == null}">🧴 🛍️ 🥤</div>
                             <div class="cv-ai-line">
                                 <span>Waste type</span>
                                 <strong th:text="${latest != null ? latest.icon + ' ' + latest.wasteType : '🧴 Plastic Waste'}">🧴 Plastic Waste</strong>
@@ -148,9 +150,10 @@
                 <div class="cv-demo-shot">
                     <div class="cv-demo-label">WASTE IMAGE</div>
                     <div class="cv-demo-img">
-                        <img th:if="${latest != null}" th:src="@{'/uploads/' + ${latest.imageUrl}}"
+                        <img th:if="${latest != null and latest.imageUrl != null}"
+                             th:src="@{'/uploads/' + ${latest.imageUrl}}"
                              alt="Waste sample for AI classification">
-                        <div class="cv-shot-art" th:if="${latest == null}">
+                        <div class="cv-shot-art" th:if="${latest == null or latest.imageUrl == null}">
                             <span class="cv-art-big">🗑️</span>
                         </div>
                         <div class="cv-demo-icons">🧴 🛍️ 🥤</div>

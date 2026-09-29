@@ -10,13 +10,17 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestAttribute;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import CleanVision.ai.AiResult;
+import CleanVision.domain.AnimalCondition;
+import CleanVision.domain.AnimalType;
 import CleanVision.domain.Report;
 import CleanVision.domain.User;
 import CleanVision.domain.WasteCategory;
 import CleanVision.domain.Severity;
+import CleanVision.dto.Forms.AnimalReportForm;
 import CleanVision.dto.Forms.DashboardStatistics;
 import CleanVision.dto.Forms.ReportForm;
 import CleanVision.security.AuthInterceptor;
@@ -102,6 +106,63 @@ public class CitizenController {
         }
     }
 
+    @GetMapping("/report/animal")
+    public String newAnimalReportPage(Model model,
+            @RequestAttribute(name = AuthInterceptor.CURRENT_USER, required = false) User user,
+            RedirectAttributes redirect) {
+        if (cannotReport(user)) {
+            redirect.addFlashAttribute("errorMessage",
+                    "Only citizen accounts can report animals. Staff accounts manage reports instead.");
+            return staffHome(user);
+        }
+        if (!model.containsAttribute("form")) {
+            model.addAttribute("form", new AnimalReportForm());
+        }
+        model.addAttribute("animalTypes", AnimalType.values());
+        model.addAttribute("animalConditions", AnimalCondition.values());
+        return "report/animal";
+    }
+
+    @PostMapping("/report/animal")
+    public String submitAnimalReport(@ModelAttribute("form") AnimalReportForm form,
+            @RequestAttribute(name = AuthInterceptor.CURRENT_USER, required = false) User user,
+            RedirectAttributes redirect) {
+        if (user == null) {
+            return "redirect:/login?next=/report/animal";
+        }
+        if (cannotReport(user)) {
+            redirect.addFlashAttribute("errorMessage",
+                    "Only citizen accounts can report animals. Staff accounts manage reports instead.");
+            return staffHome(user);
+        }
+        if (isBlank(form.getAnimalType()) || isBlank(form.getAnimalCondition())) {
+            return animalFormError(redirect, form, "Select the animal and its condition before submitting.");
+        }
+        if (AnimalType.find(form.getAnimalType()).isEmpty()) {
+            return animalFormError(redirect, form,
+                    "Choose one of the listed animals — '" + form.getAnimalType() + "' is not recognised.");
+        }
+        if (AnimalCondition.find(form.getAnimalCondition()).isEmpty()) {
+            return animalFormError(redirect, form,
+                    "Choose one of the listed conditions — '" + form.getAnimalCondition() + "' is not recognised.");
+        }
+
+        String filename = null;
+        try {
+            MultipartFile image = form.getImage();
+            if (image != null && !image.isEmpty()) {
+                filename = images.store(image);
+            }
+            Report report = reportService.createAnimal(user, form, filename);
+            redirect.addFlashAttribute("flashMessage",
+                    "Report " + report.getPublicId() + " received. We will keep you updated.");
+            return "redirect:/my-reports";
+        } catch (AppException ex) {
+            images.delete(filename);
+            return animalFormError(redirect, form, ex.getMessage());
+        }
+    }
+
     @GetMapping("/my-reports")
     public String myReports(Model model,
             @RequestAttribute(name = AuthInterceptor.CURRENT_USER, required = false) User user,
@@ -162,6 +223,16 @@ public class CitizenController {
 
     private boolean cannotReport(User user) {
         return user != null && !user.getRole().canReport();
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    private String animalFormError(RedirectAttributes redirect, AnimalReportForm form, String message) {
+        redirect.addFlashAttribute("errorMessage", message);
+        redirect.addFlashAttribute("form", form);
+        return "redirect:/report/animal";
     }
 
     private String staffHome(User user) {
