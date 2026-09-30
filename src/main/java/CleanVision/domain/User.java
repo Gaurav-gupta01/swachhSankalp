@@ -38,8 +38,8 @@ public class User {
     private String phone;
 
     /**
-     * True once the mobile has been proven with an OTP. Citizens cannot sign in until
-     * this is set; staff accounts are marked verified when they are created.
+     * True once a mobile number has been confirmed for this account. Only one verified
+     * number may belong to a citizen account; staff accounts are marked at creation.
      */
     @Column(name = "phone_verified", nullable = false)
     private boolean phoneVerified;

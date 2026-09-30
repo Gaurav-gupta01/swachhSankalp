@@ -15,7 +15,8 @@
 <header th:fragment="navbar">
     <nav class="navbar navbar-expand-lg cv-topbar">
         <div class="container">
-            <a class="navbar-brand cv-brand" th:href="@{/}">
+            <a class="navbar-brand cv-brand"
+               th:href="${currentUser == null ? '/' : currentUser.role.dashboardPath()}">
                 <span class="cv-brand-mark">🌿</span>
                 <span class="cv-brand-text">
                     <span class="cv-brand-name">Swachh Sankalp <span class="ai-badge">AI</span></span>
@@ -27,31 +28,78 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="cvNav">
-                <ul class="navbar-nav cv-nav-main">
+
+                <!-- Visitor: the marketing navigation of the public site -->
+                <ul class="navbar-nav cv-nav-main" th:if="${currentUser == null}">
                     <li class="nav-item"><a class="nav-link" th:href="@{/}">Home</a></li>
                     <li class="nav-item"><a class="nav-link" href="/#how-it-works">How It Works</a></li>
                     <li class="nav-item"><a class="nav-link" href="/#impact">Impact</a></li>
                     <li class="nav-item"><a class="nav-link" href="/#about">About</a></li>
                 </ul>
-                <ul class="navbar-nav cv-nav-side">
-                    <li class="nav-item" th:if="${currentUser == null}">
-                        <a class="nav-link" th:href="@{/login}">Login</a>
+
+                <!-- Citizen: their own work, never the public site sections -->
+                <ul class="navbar-nav cv-nav-main"
+                    th:if="${currentUser != null and currentUser.role.canReport()}">
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/my-reports}">
+                            <i class="bi bi-journal-text me-1"></i>My Reports
+                        </a>
                     </li>
-                    <li class="nav-item"
-                        th:if="${currentUser == null or currentUser.role.canReport()}">
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/report/new}">
+                            <i class="bi bi-camera-fill me-1"></i>Report Waste
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" th:href="@{/report/animal}">
                             <i class="bi bi-heart-pulse me-1"></i>Report Animal
                         </a>
                     </li>
-                    <li class="nav-item ms-lg-2"
-                        th:if="${currentUser == null or currentUser.role.canReport()}">
-                        <a class="btn btn-green-sm" th:href="@{/report/new}">
-                            <i class="bi bi-camera-fill me-1"></i>Report Waste
+                </ul>
+
+                <!-- Municipal officers: the admin console -->
+                <ul class="navbar-nav cv-nav-main"
+                    th:if="${currentUser != null and currentUser.role.isOfficer()}">
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin}">
+                            <i class="bi bi-speedometer2 me-1"></i>Dashboard
                         </a>
                     </li>
-                    <li class="nav-item ms-lg-2" th:if="${currentUser != null and currentUser.role.isOfficer()}">
-                        <a class="btn btn-green-sm" th:href="@{/admin}">
-                            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/reports}">Reports</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/teams}">Teams</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/facilities}">Facilities</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/analytics}">Analytics</a>
+                    </li>
+                    <li class="nav-item" th:if="${currentUser.role.name() == 'SUPER_ADMIN'}">
+                        <a class="nav-link" th:href="@{/admin/users}">Users</a>
+                    </li>
+                </ul>
+
+                <!-- Team leader: their crew's queue -->
+                <ul class="navbar-nav cv-nav-main"
+                    th:if="${currentUser != null and currentUser.role.isTeamLeader()}">
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/team}">
+                            <i class="bi bi-people-fill me-1"></i>My Team Queue
+                        </a>
+                    </li>
+                </ul>
+
+                <ul class="navbar-nav cv-nav-side">
+                    <li class="nav-item" th:if="${currentUser == null}">
+                        <a class="nav-link" th:href="@{/login}">Login</a>
+                    </li>
+                    <li class="nav-item ms-lg-2"
+                        th:if="${currentUser == null}">
+                        <a class="btn btn-green-sm" th:href="@{/report/new}">
+                            <i class="bi bi-camera-fill me-1"></i>Report Waste
                         </a>
                     </li>
                     <li class="nav-item dropdown" th:if="${currentUser != null}">
@@ -64,13 +112,13 @@
                                       th:text="${currentUser.role.label}">Citizen</span></li>
                             <li><hr class="dropdown-divider"></li>
                             <li th:if="${currentUser.role.canReport()}">
+                                <a class="dropdown-item" th:href="@{/my-reports}">My Reports</a>
+                            </li>
+                            <li th:if="${currentUser.role.canReport()}">
                                 <a class="dropdown-item" th:href="@{/report/new}">Report Waste</a>
                             </li>
                             <li th:if="${currentUser.role.canReport()}">
                                 <a class="dropdown-item" th:href="@{/report/animal}">Report an Animal</a>
-                            </li>
-                            <li th:if="${currentUser.role.canReport()}">
-                                <a class="dropdown-item" th:href="@{/my-reports}">My Reports</a>
                             </li>
                             <li th:if="${currentUser.role.isTeamLeader()}">
                                 <a class="dropdown-item" th:href="@{/team}">My Team Queue</a>

@@ -67,9 +67,8 @@ public class SchemaFixups implements ApplicationRunner {
     }
 
     /**
-     * Only self-registered citizens must prove their mobile with an OTP. Staff accounts are
-     * created by an officer, so they are treated as already verified and can never get stuck
-     * behind the login gate.
+     * Staff accounts are created by an officer, so they are treated as already verified
+     * and can never appear unproven in the user screens.
      */
     private void markStaffMobilesVerified() {
         try {

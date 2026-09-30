@@ -29,7 +29,7 @@ public final class Forms {
         @Email(message = "Enter a valid email")
         private String email;
 
-        /** Mandatory — proven with an OTP before the account is created. */
+        /** Mandatory — normalised to a 10-digit Indian mobile number on registration. */
         @NotBlank(message = "Mobile number is required")
         @Size(max = 20)
         private String phone;

@@ -9,7 +9,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
             <h1 class="h3 section-title mb-1">User Management</h1>
-            <div class="text-muted small">Super admin area — create officer and citizen accounts.</div>
+            <div class="text-muted small">Super admin area — create, edit and delete officer and citizen accounts.</div>
         </div>
         <a th:href="@{/admin}" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-speedometer2 me-1"></i>Dashboard
@@ -81,14 +81,17 @@
                         <tr>
                             <th>Name</th>
                             <th>Email</th>
+                            <th>Mobile</th>
                             <th>Role</th>
                             <th>Joined</th>
+                            <th class="text-end">Actions</th>
                         </tr>
                         </thead>
                         <tbody>
                         <tr th:each="u : ${users}">
                             <td class="fw-semibold" th:text="${u.name}">Name</td>
                             <td th:text="${u.email}">email</td>
+                            <td class="text-muted small" th:text="${u.phone ?: '—'}">mobile</td>
                             <td>
                                 <span class="badge"
                                       th:classappend="${u.role.name() == 'SUPER_ADMIN' ? 'text-bg-danger'
@@ -97,6 +100,20 @@
                             </td>
                             <td class="text-muted small"
                                 th:text="${u.createdAt != null ? #temporals.format(u.createdAt, 'dd MMM yyyy') : '-'}">Joined</td>
+                            <td class="text-end text-nowrap">
+                                <a class="btn btn-outline-primary btn-sm"
+                                   th:href="'/admin/users/' + ${u.id} + '/edit'"
+                                   th:title="'Edit ' + ${u.name}">
+                                    <i class="bi bi-pencil-square"></i>
+                                </a>
+                                <form th:action="'/admin/users/' + ${u.id} + '/delete'" method="post"
+                                      class="d-inline" onsubmit="return confirm('Delete this account?');">
+                                    <button class="btn btn-outline-danger btn-sm" type="submit"
+                                            th:title="'Delete ' + ${u.name}">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </form>
+                            </td>
                         </tr>
                         </tbody>
                     </table>

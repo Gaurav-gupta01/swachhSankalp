@@ -33,23 +33,10 @@ class AuthServiceRegisterTest {
     }
 
     @Test
-    void registrationIsRejectedUntilTheMobileHasAnOtp() {
-        RegisterForm form = form("Gaurav Gupta", "gaurav@example.com", "9876543210");
-
-        assertThatThrownBy(() -> authService.register(form, null))
-                .isInstanceOf(AppException.class)
-                .hasMessageContaining("Verify your mobile number");
-
-        assertThatThrownBy(() -> authService.register(form, "9999999999"))
-                .isInstanceOf(AppException.class)
-                .hasMessageContaining("Verify your mobile number");
-    }
-
-    @Test
-    void registrationSucceedsWithAProvenMobile() {
+    void registrationNormalisesTheMobileAndCreatesTheAccount() {
         RegisterForm form = form("Gaurav Gupta", "Gaurav@Example.com", "+91 98765 43210");
 
-        User user = authService.register(form, "9876543210");
+        User user = authService.register(form);
 
         assertThat(user.isPhoneVerified()).isTrue();
         assertThat(user.getPhone()).isEqualTo("9876543210");
@@ -59,33 +46,47 @@ class AuthServiceRegisterTest {
     }
 
     @Test
-    void malformedEmailIsRejectedEvenWithAValidOtp() {
+    void malformedEmailIsRejected() {
         RegisterForm form = form("No Mail", "not-an-email", "9876543210");
 
-        assertThatThrownBy(() -> authService.register(form, "9876543210"))
+        assertThatThrownBy(() -> authService.register(form))
                 .isInstanceOf(AppException.class)
                 .hasMessageContaining("valid email");
     }
 
     @Test
-    void missingOrInvalidMobileIsRejectedBeforeOtp() {
-        assertThatThrownBy(() -> authService.register(form("A", "a@example.com", null), "9876543210"))
+    void missingOrInvalidMobileIsRejected() {
+        assertThatThrownBy(() -> authService.register(form("A", "a@example.com", null)))
                 .isInstanceOf(AppException.class);
 
-        assertThatThrownBy(() -> authService.register(form("A", "a@example.com", "12345"), "12345"))
+        assertThatThrownBy(() -> authService.register(form("A", "a@example.com", "12345")))
                 .isInstanceOf(AppException.class)
                 .hasMessageContaining("Indian mobile");
     }
 
     @Test
-    void oneVerifiedMobileBelongsToOneCitizen() {
-        authService.register(form("First", "first@example.com", "9876543210"), "9876543210");
+    void missingNameIsRejected() {
+        assertThatThrownBy(() -> authService.register(form("  ", "a@example.com", "9876543210")))
+                .isInstanceOf(AppException.class)
+                .hasMessageContaining("Name is required");
+    }
 
-        assertThatThrownBy(
-                () -> authService.register(form("Second", "second@example.com", "+919876543210"),
-                        "9876543210"))
+    @Test
+    void oneMobileBelongsToOneCitizen() {
+        authService.register(form("First", "first@example.com", "9876543210"));
+
+        assertThatThrownBy(() -> authService.register(form("Second", "second@example.com", "+919876543210")))
                 .isInstanceOf(AppException.class)
                 .hasMessageContaining("already linked to a citizen account");
+    }
+
+    @Test
+    void oneEmailBelongsToOneAccount() {
+        authService.register(form("First", "taken@example.com", "9876543210"));
+
+        assertThatThrownBy(() -> authService.register(form("Second", "Taken@Example.com", "9876543211")))
+                .isInstanceOf(AppException.class)
+                .hasMessageContaining("email already exists");
     }
 
     @Test
@@ -94,20 +95,6 @@ class AuthServiceRegisterTest {
                 "secret123", Role.ADMIN);
 
         assertThat(officer.isPhoneVerified()).isTrue();
-        assertThat(authService.needsMobileVerification(officer)).isFalse();
-    }
-
-    @Test
-    void aCitizenWhoNeverVerifiedIsAskedToVerifyAtLogin() {
-        User citizen = new User();
-        citizen.setName("Legacy Citizen");
-        citizen.setEmail("legacy@example.com");
-        citizen.setPhone("9822000002");
-        citizen.setRole(Role.CITIZEN);
-        citizen.setPasswordHash("x");
-        users.save(citizen);
-
-        assertThat(citizen.isPhoneVerified()).isFalse();
-        assertThat(authService.needsMobileVerification(citizen)).isTrue();
+        assertThat(users.existsByEmailIgnoreCase("officer@example.com")).isTrue();
     }
 }

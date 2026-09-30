@@ -19,9 +19,8 @@ import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Login, logout and citizen registration. Mobile OTP verification has been switched
- * off: an account is created as soon as the form is valid, and every password check
- * goes straight to the dashboard.
+ * Login, logout and citizen registration. An account is created as soon as the form is
+ * valid, and every password check goes straight to the dashboard.
  */
 @Controller
 @RequiredArgsConstructor
@@ -70,7 +69,7 @@ public class AuthController {
             HttpServletRequest request,
             RedirectAttributes redirect) {
         try {
-            User user = authService.register(form, form.getPhone());
+            User user = authService.register(form);
             startSession(request, user);
             redirect.addFlashAttribute("flashMessage",
                     "Account created. Report waste the moment you see it.");

@@ -58,7 +58,7 @@ public class ApiController {
     @PostMapping("/auth/register")
     public ApiResponse register(@RequestBody RegisterForm form, HttpSession session) {
         try {
-            User user = authService.register(form, form.getPhone());
+            User user = authService.register(form);
             session.setAttribute(AuthInterceptor.SESSION_USER_ID, user.getId());
             return ApiResponse.ok("Account created", publicUser(user));
         } catch (AppException ex) {
