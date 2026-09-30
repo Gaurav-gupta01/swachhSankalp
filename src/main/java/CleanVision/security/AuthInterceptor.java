@@ -107,7 +107,6 @@ public class AuthInterceptor implements HandlerInterceptor {
             return true;
         }
         if (uri.equals("/login") || uri.equals("/register")
-                || uri.startsWith("/verify-mobile")
                 || (uri.equals("/logout") && "GET".equalsIgnoreCase(method))) {
             return true;
         }

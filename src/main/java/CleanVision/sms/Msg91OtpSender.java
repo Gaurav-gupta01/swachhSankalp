@@ -22,16 +22,19 @@ public class Msg91OtpSender implements OtpSender {
 
     private final String senderId;
     private final String baseUrl;
+    private final String dltTeId;
     private final String message;
 
     public Msg91OtpSender(
             @Value("${cleanvision.msg91.auth-key:}") String authKey,
             @Value("${cleanvision.msg91.sender-id:}") String senderId,
             @Value("${cleanvision.msg91.base-url:https://control.msg91.com}") String baseUrl,
+            @Value("${cleanvision.msg91.dlt-te-id:}") String dltTeId,
             @Value("${cleanvision.msg91.message:}") String message) {
         this.authKey = authKey == null ? "" : authKey.trim();
         this.senderId = senderId == null ? "" : senderId.trim();
         this.baseUrl = baseUrl == null || baseUrl.isBlank() ? "https://control.msg91.com" : baseUrl.trim();
+        this.dltTeId = dltTeId == null ? "" : dltTeId.trim();
         this.message = message == null ? "" : message;
     }
 
@@ -51,6 +54,8 @@ public class Msg91OtpSender implements OtpSender {
                     + "&otp_expiry=" + expiryMinutes
                     + "&otp_length=" + code.length()
                     + (senderId.isEmpty() ? "" : "&sender=" + encode(senderId))
+                    // Indian DLT rules: the approved template id must travel with the SMS.
+                    + (dltTeId.isEmpty() ? "" : "&DLT_TE_ID=" + encode(dltTeId))
                     + (message.isEmpty() ? "" : "&message=" + encode(message));
 
             java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()

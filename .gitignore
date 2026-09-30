@@ -1,5 +1,9 @@
 HELP.md
 target/
+# Local secrets and environment — only .env.example is ever shared.
+.env
+.env.*
+!.env.example
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
