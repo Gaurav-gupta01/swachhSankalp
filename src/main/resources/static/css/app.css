@@ -53,6 +53,13 @@ main {
     flex: none;
 }
 
+.cv-brand-mark img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: .15rem;
+}
+
 .cv-brand-name {
     display: block;
     font-weight: 800;
@@ -231,6 +238,13 @@ main {
 .preview-img {
     max-height: 320px;
     width: 100%;
+    object-fit: contain;
+    background: #0d1512;
+    border-radius: .75rem;
+}
+
+.cv-camera-video {
+    max-height: 60vh;
     object-fit: contain;
     background: #0d1512;
     border-radius: .75rem;

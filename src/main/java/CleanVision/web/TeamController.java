@@ -24,6 +24,7 @@ import CleanVision.domain.Report;
 import CleanVision.domain.ReportStatus;
 import CleanVision.domain.Team;
 import CleanVision.domain.User;
+import CleanVision.domain.WasteCategory;
 import CleanVision.dto.Forms;
 import CleanVision.repository.DisposalFacilityRepository;
 import CleanVision.security.AuthInterceptor;
@@ -49,6 +50,8 @@ public class TeamController {
 
         model.addAttribute("team", team);
         model.addAttribute("reports", reports);
+        model.addAttribute("animalTeam",
+                team.getTeamType() == CleanVision.domain.TeamType.ANIMAL);
         model.addAttribute("openCount", reports.stream()
                 .filter(r -> r.getStatus().ordinal() < ReportStatus.RESOLVED.ordinal()).count());
         model.addAttribute("inProgressCount", reports.stream()
@@ -69,6 +72,7 @@ public class TeamController {
 
         model.addAttribute("report", report);
         model.addAttribute("team", team);
+        model.addAttribute("animalReport", report.getWasteType() == WasteCategory.ANIMAL);
         model.addAttribute("timeline", reportService.timeline(report));
         model.addAttribute("assignment", reportService.activeAssignment(report));
         model.addAttribute("mapPoints", List.of(mapPoint(report)));
@@ -89,9 +93,35 @@ public class TeamController {
                     + report.getStatus().getLabel().toLowerCase() + ".");
             return "redirect:/team/reports/" + publicId;
         }
+        boolean animal = report.getWasteType() == WasteCategory.ANIMAL;
         reportService.changeStatus(report, ReportStatus.IN_PROGRESS, user.getName(),
-                "Cleanup started by " + team.getTeamName());
-        redirect.addFlashAttribute("flashMessage", publicId + " marked as In Progress");
+                (animal ? "Rescue started by " : "Cleanup started by ") + team.getTeamName());
+        redirect.addFlashAttribute("flashMessage", animal
+                ? publicId + " marked as rescue in progress"
+                : publicId + " marked as In Progress");
+        return "redirect:/team/reports/" + publicId;
+    }
+
+    /**
+     * Rescue teams finish an animal report in one step: the after-rescue photo is
+     * uploaded and the report is closed, so the citizen sees it as closed.
+     */
+    @PostMapping("/reports/{publicId}/close")
+    public String closeRescue(@PathVariable String publicId,
+            @RequestParam("file") MultipartFile file,
+            @RequestAttribute(name = AuthInterceptor.CURRENT_USER, required = false) User user,
+            RedirectAttributes redirect) {
+        Team team = teamOf(user);
+        Report report = reportService.byPublicId(publicId);
+        requireAssignedTo(team, report);
+
+        try {
+            reportService.closeAfterRescue(report, file, user.getName());
+            redirect.addFlashAttribute("flashMessage",
+                    "Report " + publicId + " closed successfully");
+        } catch (AppException ex) {
+            redirect.addFlashAttribute("errorMessage", ex.getMessage());
+        }
         return "redirect:/team/reports/" + publicId;
     }
 
@@ -143,6 +173,11 @@ public class TeamController {
         Report report = reportService.byPublicId(publicId);
         requireAssignedTo(team, report);
 
+        if (report.getWasteType() == WasteCategory.ANIMAL) {
+            redirect.addFlashAttribute("errorMessage",
+                    "Animal rescue reports do not use waste disposal facilities.");
+            return "redirect:/team/reports/" + publicId;
+        }
         if (report.getStatus().ordinal() < ReportStatus.COLLECTED.ordinal()) {
             throw new AppException("Mark " + publicId + " as collected before looking for a facility");
         }
@@ -201,6 +236,12 @@ public class TeamController {
 
         DisposalFacility facility = facilities.findById(facilityId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Facility not found"));
+
+        if (report.getWasteType() == WasteCategory.ANIMAL) {
+            redirect.addFlashAttribute("errorMessage",
+                    "Animal rescue reports do not use waste disposal facilities.");
+            return "redirect:/team/reports/" + publicId;
+        }
 
         double originLat = report.getTeamLatitude() != null
                 ? report.getTeamLatitude() : report.getLatitude();

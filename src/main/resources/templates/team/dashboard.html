@@ -30,7 +30,12 @@
         </div>
     </div>
 
-    <div class="alert alert-info py-2 small mb-4">
+    <div class="alert alert-info py-2 small mb-4" th:if="${animalTeam}">
+        <i class="bi bi-heart-pulse me-1"></i>Animal reports land here the moment a citizen files them.
+        Open one to see the route, mark the rescue started and upload the after-rescue photo to close it.
+    </div>
+
+    <div class="alert alert-info py-2 small mb-4" th:if="${!animalTeam}">
         <i class="bi bi-signpost-split me-1"></i>Open a report to see the route, mark work started and upload the
         after-cleanup photo.
     </div>

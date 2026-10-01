@@ -97,7 +97,8 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     private boolean isPublic(String uri, String method) {
         if (uri.startsWith("/css/") || uri.startsWith("/js/") || uri.startsWith("/images/")
-                || uri.startsWith("/uploads/") || uri.startsWith("/webjars/") || uri.startsWith("/vendor/")) {
+                || uri.startsWith("/img/") || uri.startsWith("/uploads/") || uri.startsWith("/webjars/")
+                || uri.startsWith("/vendor/")) {
             return true;
         }
         if (uri.equals("/") || uri.equals("/error") || uri.equals("/favicon.ico")) {

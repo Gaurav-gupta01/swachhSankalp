@@ -140,17 +140,16 @@ public class ReportService {
         if (team == null) {
             throw new AppException("Choose a cleanup team first");
         }
-        TeamType teamType = team.getTeamType() == null ? TeamType.WASTE : team.getTeamType();
-        TeamType required = report.getWasteType() == WasteCategory.ANIMAL
-                ? TeamType.ANIMAL
-                : TeamType.WASTE;
-        if (teamType != required) {
-            String article = teamType == TeamType.ANIMAL ? "an " : "a ";
-            throw new AppException(team.getTeamName() + " is " + article
-                    + teamType.getLabel().toLowerCase()
-                    + " team and cannot take " + report.getPublicId() + " ("
-                    + required.getLabel().toLowerCase() + " reports only)");
+        if (handles(team, report)) {
+            return;
         }
+        TeamType teamType = team.getTeamType() == null ? TeamType.WASTE : team.getTeamType();
+        TeamType required = teamTypeFor(report);
+        String article = teamType == TeamType.ANIMAL ? "an " : "a ";
+        throw new AppException(team.getTeamName() + " is " + article
+                + teamType.getLabel().toLowerCase()
+                + " team and cannot take " + report.getPublicId() + " ("
+                + required.getLabel().toLowerCase() + " reports only)");
     }
 
     @Transactional(readOnly = true)
@@ -169,13 +168,29 @@ public class ReportService {
         return reports.findByReporterIdOrderByCreatedAtDesc(user.getId());
     }
 
+    /**
+     * The queue of a crew: only the reports that crew type is allowed to handle, so
+     * an animal rescue crew never sees waste collection or disposal work and a waste
+     * crew never sees animal reports.
+     */
     @Transactional
     public List<Report> byTeam(CleanVision.domain.Team team) {
         return assignments.findByTeamIdAndActiveTrue(team.getId()).stream()
                 .map(Assignment::getReport)
+                .filter(report -> handles(team, report))
                 .sorted(java.util.Comparator.comparing(Report::getCreatedAt,
                         java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())))
                 .toList();
+    }
+
+    /** Waste crews handle waste, animal rescue crews handle animals — never both. */
+    public boolean handles(Team team, Report report) {
+        TeamType teamType = team.getTeamType() == null ? TeamType.WASTE : team.getTeamType();
+        return teamType == teamTypeFor(report);
+    }
+
+    private TeamType teamTypeFor(Report report) {
+        return report.getWasteType() == WasteCategory.ANIMAL ? TeamType.ANIMAL : TeamType.WASTE;
     }
 
     @Transactional
@@ -221,6 +236,7 @@ public class ReportService {
     @Transactional
     public Report markCollected(Report report, Double quantityKg, Double teamLatitude,
             Double teamLongitude, String updatedBy) {
+        requireWasteWorkflow(report);
         if (report.getStatus().ordinal() < ReportStatus.IN_PROGRESS.ordinal()) {
             throw new AppException("Start the cleanup before marking " + report.getPublicId()
                     + " as collected");
@@ -245,6 +261,7 @@ public class ReportService {
     @Transactional
     public Report confirmDisposal(Report report, CleanVision.domain.DisposalFacility facility,
             Double distanceMeters, Double durationSeconds, String updatedBy) {
+        requireWasteWorkflow(report);
         if (facility == null) {
             throw new AppException("Choose a disposal facility first");
         }
@@ -278,6 +295,51 @@ public class ReportService {
             record(report, report.getStatus(), updatedBy, "After-cleanup photo uploaded");
         }
         return report;
+    }
+
+    /**
+     * Animal rescue reports skip the waste pipeline entirely: once the crew has done
+     * the rescue they upload the after photo here and the report is closed in the
+     * same step, which is what the reporting citizen is told about.
+     */
+    @Transactional
+    public Report closeAfterRescue(Report report, MultipartFile file, String updatedBy) {
+        requireAnimalReport(report);
+        if (file == null || file.isEmpty()) {
+            throw new AppException("Upload the after-rescue photo before closing " + report.getPublicId());
+        }
+        if (report.getStatus().ordinal() >= ReportStatus.CLOSED.ordinal()) {
+            throw new AppException(report.getPublicId() + " is already "
+                    + report.getStatus().getLabel().toLowerCase());
+        }
+        if (report.getStatus().ordinal() < ReportStatus.IN_PROGRESS.ordinal()) {
+            throw new AppException("Start the rescue before closing " + report.getPublicId());
+        }
+
+        String filename = images.store(file);
+        String previous = report.getAfterImageUrl();
+        report.setAfterImageUrl(filename);
+        reports.save(report);
+        images.delete(previous);
+
+        changeStatus(report, ReportStatus.CLOSED, updatedBy,
+                "Animal handled by the rescue team — after photo uploaded, report closed successfully");
+        return report;
+    }
+
+    /** Animal reports are rescued and closed with a photo — never collected or disposed. */
+    private void requireWasteWorkflow(Report report) {
+        if (report.getWasteType() == WasteCategory.ANIMAL) {
+            throw new AppException(report.getPublicId()
+                    + " is an animal rescue report — upload the after-rescue photo to close it instead");
+        }
+    }
+
+    private void requireAnimalReport(Report report) {
+        if (report.getWasteType() != WasteCategory.ANIMAL) {
+            throw new AppException(report.getPublicId()
+                    + " is a waste report — follow the collection and disposal workflow instead");
+        }
     }
 
     @Transactional(readOnly = true)
