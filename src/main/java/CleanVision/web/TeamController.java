@@ -168,6 +168,7 @@ public class TeamController {
     @GetMapping("/reports/{publicId}/disposal")
     public String disposal(@PathVariable String publicId,
             @RequestAttribute(name = AuthInterceptor.CURRENT_USER, required = false) User user,
+            RedirectAttributes redirect,
             Model model) {
         Team team = teamOf(user);
         Report report = reportService.byPublicId(publicId);
@@ -185,10 +186,9 @@ public class TeamController {
             return "redirect:/team/reports/" + publicId;
         }
 
-        double originLat = report.getTeamLatitude() != null
-                ? report.getTeamLatitude() : report.getLatitude();
-        double originLng = report.getTeamLongitude() != null
-                ? report.getTeamLongitude() : report.getLongitude();
+        double[] origin = originOf(report);
+        double originLat = origin[0];
+        double originLng = origin[1];
 
         FacilityService.RoutingResult routing = facilityService.recommend(
                 report.getWasteType(), originLat, originLng);
@@ -197,7 +197,9 @@ public class TeamController {
                 .map(suggestion -> new Forms.FacilitySuggestionView(
                         suggestion.facility().getId(),
                         suggestion.facility().getName(),
-                        suggestion.facility().getFacilityType().getLabel(),
+                        suggestion.facility().getFacilityType() == null
+                                ? ""
+                                : suggestion.facility().getFacilityType().getLabel(),
                         suggestion.facility().getAddress(),
                         suggestion.facility().getWard(),
                         suggestion.facility().getAcceptedCategories().stream()
@@ -243,10 +245,9 @@ public class TeamController {
             return "redirect:/team/reports/" + publicId;
         }
 
-        double originLat = report.getTeamLatitude() != null
-                ? report.getTeamLatitude() : report.getLatitude();
-        double originLng = report.getTeamLongitude() != null
-                ? report.getTeamLongitude() : report.getLongitude();
+        double[] origin = originOf(report);
+        double originLat = origin[0];
+        double originLng = origin[1];
 
         try {
             double[] leg = facilityService.routeLeg(originLat, originLng, facility);
@@ -286,6 +287,18 @@ public class TeamController {
             points.add(point);
         }
         return points;
+    }
+
+    private double[] originOf(Report report) {
+        Double lat = report.getTeamLatitude() != null
+                ? report.getTeamLatitude() : report.getLatitude();
+        Double lng = report.getTeamLongitude() != null
+                ? report.getTeamLongitude() : report.getLongitude();
+        if (lat == null || lng == null) {
+            throw new AppException("No location available for " + report.getPublicId()
+                    + " — cannot show nearby disposal facilities.");
+        }
+        return new double[] { lat, lng };
     }
 
     private Team teamOf(User user) {
